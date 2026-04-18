@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Users, Handshake, Mail, Music2,
   Calendar, DollarSign, MapPin, FileText, BarChart2,
-  FolderOpen, Settings, Bot,
+  FolderOpen, Settings, Bot, Send,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -13,6 +13,7 @@ const nav = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/dashboard/artists', label: 'Artists', icon: Users },
   { href: '/dashboard/deals', label: 'Deals', icon: Handshake },
+  { href: '/dashboard/outreach', label: 'Outreach', icon: Send },
   { href: '/dashboard/gmail', label: 'Gmail', icon: Mail },
   { href: '/dashboard/spotify', label: 'Spotify', icon: Music2 },
   { href: '/dashboard/calendar', label: 'Calendar', icon: Calendar },

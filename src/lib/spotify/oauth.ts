@@ -4,10 +4,6 @@ const SPOTIFY_TOKEN_URL = 'https://accounts.spotify.com/api/token'
 const SCOPES = [
   'user-read-private',
   'user-read-email',
-  'user-read-playback-state',
-  'user-read-currently-playing',
-  'playlist-read-private',
-  'playlist-read-collaborative',
 ].join(' ')
 
 export function getSpotifyAuthUrl(state?: string) {

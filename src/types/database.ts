@@ -263,6 +263,53 @@ export interface Database {
         }
         Relationships: []
       }
+      contacts: {
+        Row: {
+          id: string
+          name: string
+          company: string | null
+          email: string | null
+          phone: string | null
+          city: string | null
+          state: string | null
+          region: string | null
+          market_type: 'club' | 'festival' | 'bar' | 'venue' | 'agency' | 'other' | null
+          pitch_status: 'not_contacted' | 'drafted' | 'sent' | 'responded' | 'booked' | null
+          notes: string | null
+          last_pitched_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          company?: string | null
+          email?: string | null
+          phone?: string | null
+          city?: string | null
+          state?: string | null
+          region?: string | null
+          market_type?: 'club' | 'festival' | 'bar' | 'venue' | 'agency' | 'other' | null
+          pitch_status?: 'not_contacted' | 'drafted' | 'sent' | 'responded' | 'booked' | null
+          notes?: string | null
+          last_pitched_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          company?: string | null
+          email?: string | null
+          phone?: string | null
+          city?: string | null
+          state?: string | null
+          region?: string | null
+          market_type?: 'club' | 'festival' | 'bar' | 'venue' | 'agency' | 'other' | null
+          pitch_status?: 'not_contacted' | 'drafted' | 'sent' | 'responded' | 'booked' | null
+          notes?: string | null
+          last_pitched_at?: string | null
+        }
+        Relationships: []
+      }
       agent_conversations: {
         Row: {
           id: string
