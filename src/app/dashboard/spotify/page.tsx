@@ -1,8 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Music2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export default async function SpotifyPage({
   searchParams,
@@ -48,12 +49,13 @@ export default async function SpotifyPage({
             </CardHeader>
             {!artist.spotify_access_token && (
               <CardContent>
-                <Button size="sm" variant="outline" asChild>
-                  <a href={`/api/spotify/connect?artistId=${artist.id}`}>
-                    <Music2 className="h-4 w-4 mr-2" />
-                    Connect Spotify
-                  </a>
-                </Button>
+                <a
+                  href={`/api/spotify/connect?artistId=${artist.id}`}
+                  className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}
+                >
+                  <Music2 className="h-4 w-4 mr-2" />
+                  Connect Spotify
+                </a>
               </CardContent>
             )}
           </Card>

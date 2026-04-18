@@ -1,12 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import Link from 'next/link'
 import { Plus, Music2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export default async function ArtistsPage() {
   const supabase = await createClient()
@@ -19,9 +20,9 @@ export default async function ArtistsPage() {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Artists</h1>
-        <Button size="sm" asChild>
-          <Link href="/dashboard/artists/new"><Plus className="h-4 w-4 mr-1" />Add Artist</Link>
-        </Button>
+        <Link href="/dashboard/artists/new" className={cn(buttonVariants({ size: 'sm' }))}>
+          <Plus className="h-4 w-4 mr-1" />Add Artist
+        </Link>
       </div>
 
       <Table>
@@ -61,9 +62,9 @@ export default async function ArtistsPage() {
                 </Badge>
               </TableCell>
               <TableCell>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href={`/dashboard/artists/${artist.id}`}>View</Link>
-                </Button>
+                <Link href={`/dashboard/artists/${artist.id}`} className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}>
+                  View
+                </Link>
               </TableCell>
             </TableRow>
           ))}
