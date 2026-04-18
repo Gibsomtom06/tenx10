@@ -277,7 +277,12 @@ export default function HomepageClient() {
           </div>
           <div className="flex items-center gap-3">
             <Badge variant="outline" className="text-xs hidden sm:flex">Early Access</Badge>
-            <Button size="sm" variant="ghost" onClick={() => document.getElementById('access-form')?.scrollIntoView({ behavior: 'smooth' })}>
+            <a href="/auth/login">
+              <Button size="sm" variant="ghost" className="text-muted-foreground">
+                Log in
+              </Button>
+            </a>
+            <Button size="sm" onClick={() => document.getElementById('access-form')?.scrollIntoView({ behavior: 'smooth' })}>
               Get Access
             </Button>
           </div>
