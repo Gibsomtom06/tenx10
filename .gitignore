@@ -36,6 +36,16 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Claude Code internals
+.claude/
+.agents/
+skills-lock.json
+
+# Gigwell scraper output (contains session data)
+scripts/gigwell-cookies*.json
+scripts/gigwell-data*.json
+scripts/.chrome-temp/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

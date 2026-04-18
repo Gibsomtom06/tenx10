@@ -6,7 +6,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import Link from 'next/link'
-import { Plus, Music2 } from 'lucide-react'
+import { Plus, Music2, UserCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export default async function ArtistsPage() {
@@ -31,6 +31,7 @@ export default async function ArtistsPage() {
             <TableHead>Artist</TableHead>
             <TableHead>Genre</TableHead>
             <TableHead>Spotify</TableHead>
+            <TableHead>Portal</TableHead>
             <TableHead>Status</TableHead>
             <TableHead></TableHead>
           </TableRow>
@@ -55,6 +56,16 @@ export default async function ArtistsPage() {
                 {artist.spotify_artist_id ? (
                   <Music2 className="h-4 w-4 text-green-500" />
                 ) : '—'}
+              </TableCell>
+              <TableCell>
+                {(artist as any).user_id ? (
+                  <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                    <UserCheck className="h-3.5 w-3.5" />
+                    Linked
+                  </div>
+                ) : (
+                  <span className="text-xs text-muted-foreground">No portal</span>
+                )}
               </TableCell>
               <TableCell>
                 <Badge variant={artist.status === 'active' ? 'default' : 'secondary'}>

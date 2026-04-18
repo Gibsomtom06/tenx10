@@ -24,14 +24,18 @@ export async function updateSession(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isAuthRoute = request.nextUrl.pathname.startsWith('/auth')
-  const isDashboard = request.nextUrl.pathname.startsWith('/dashboard')
+  const path = request.nextUrl.pathname
+  const isAuthCallback = path === '/auth/callback'
+  const isAuthRoute = path.startsWith('/auth')
+  const isDashboard = path.startsWith('/dashboard')
+  const isArtistRoute = path.startsWith('/artist')
 
-  if (!user && isDashboard) {
+  if (!user && (isDashboard || isArtistRoute)) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
-  if (user && isAuthRoute) {
+  // Don't redirect away from callback — it needs to run to establish the session
+  if (user && isAuthRoute && !isAuthCallback) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 

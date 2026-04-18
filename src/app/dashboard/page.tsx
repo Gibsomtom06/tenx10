@@ -3,10 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import {
   Users, Handshake, Mail, Music2, DollarSign,
-  Send, ArrowUpRight, Globe, MapPin,
+  Send, ArrowUpRight, Globe, MapPin, AlertTriangle, CheckCircle2,
 } from 'lucide-react'
 import Link from 'next/link'
 import { buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 // Top listener cities from DSR knowledge base — cities not yet on TMTYL 2026
 const LISTENER_MARKETS = [
@@ -27,12 +28,23 @@ export default async function DashboardPage() {
     { data: deals },
     { data: gmailConn },
     { data: contacts },
+    { data: profile },
   ] = await Promise.all([
     supabase.from('artists').select('*', { count: 'exact', head: true }),
     supabase.from('deals').select('offer_amount, status, show_date, deal_points').neq('status', 'cancelled'),
     supabase.from('gmail_connections').select('id, email').eq('user_id', user?.id ?? '').single(),
     supabase.from('contacts').select('pitch_status', { count: 'exact' }).neq('pitch_status', 'not_contacted'),
+    supabase.from('profiles').select('full_name').eq('id', user?.id ?? '').single(),
   ])
+
+  const setupSteps = [
+    { label: 'Account configured', done: !!profile?.full_name, href: '/onboarding' },
+    { label: 'Artist on roster', done: (artistCount ?? 0) > 0, href: '/dashboard/artists/new' },
+    { label: 'Gmail connected', done: !!gmailConn, href: '/api/gmail/connect' },
+    { label: 'Bookings imported', done: (deals?.length ?? 0) > 0, href: '/dashboard/import' },
+  ]
+  const setupComplete = setupSteps.every(s => s.done)
+  const setupProgress = setupSteps.filter(s => s.done).length
 
   const activeDealCount = deals?.length ?? 0
   const confirmedDeals = deals?.filter(d => ['confirmed', 'completed'].includes(d.status)) ?? []
@@ -56,6 +68,39 @@ export default async function DashboardPage() {
 
   return (
     <div className="p-6 space-y-8">
+
+      {/* Setup progress banner */}
+      {!setupComplete && (
+        <div className="border border-yellow-500/30 bg-yellow-500/5 rounded-lg p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold">Setup {setupProgress}/{setupSteps.length} complete</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Finish setup to unlock the full pipeline</p>
+                <div className="flex flex-wrap gap-3 mt-3">
+                  {setupSteps.map(s => (
+                    <a key={s.label} href={s.href} className={cn(
+                      'flex items-center gap-1.5 text-xs',
+                      s.done ? 'text-green-600 pointer-events-none' : 'text-yellow-600 hover:underline'
+                    )}>
+                      {s.done
+                        ? <CheckCircle2 className="h-3 w-3" />
+                        : <span className="h-3 w-3 rounded-full border border-yellow-500 inline-block" />
+                      }
+                      {s.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <Link href="/onboarding" className={cn(buttonVariants({ size: 'sm', variant: 'outline' }), 'shrink-0 border-yellow-500/50 text-yellow-700 hover:bg-yellow-500/10')}>
+              Continue setup
+            </Link>
+          </div>
+        </div>
+      )}
+
       <div>
         <h1 className="text-2xl font-bold">Overview</h1>
         <p className="text-muted-foreground text-sm">DirtySnatcha Records — TMTYL 2026</p>

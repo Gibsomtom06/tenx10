@@ -6,19 +6,21 @@ interface DraftParams {
   body: string
   accessToken: string
   refreshToken?: string
+  cc?: string[]
 }
 
-export async function createGmailDraft({ to, subject, body, accessToken, refreshToken }: DraftParams) {
+export async function createGmailDraft({ to, subject, body, accessToken, refreshToken, cc }: DraftParams) {
   const gmail = getGmailClient(accessToken, refreshToken)
 
-  const message = [
+  const headers: string[] = [
     `To: ${to}`,
     'Content-Type: text/html; charset=utf-8',
     'MIME-Version: 1.0',
     `Subject: ${subject}`,
-    '',
-    body,
-  ].join('\n')
+  ]
+  if (cc && cc.length > 0) headers.push(`Cc: ${cc.join(', ')}`)
+
+  const message = [...headers, '', body].join('\n')
 
   const encoded = Buffer.from(message).toString('base64url')
 

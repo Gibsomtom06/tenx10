@@ -9,7 +9,7 @@ export interface Database {
           email: string
           full_name: string | null
           avatar_url: string | null
-          role: 'admin' | 'manager' | 'viewer'
+          role: 'admin' | 'manager' | 'viewer' | 'artist' | 'agent'
           created_at: string
           updated_at: string
         }
@@ -18,14 +18,14 @@ export interface Database {
           email: string
           full_name?: string | null
           avatar_url?: string | null
-          role: 'admin' | 'manager' | 'viewer'
+          role: 'admin' | 'manager' | 'viewer' | 'artist' | 'agent'
         }
         Update: {
           id?: string
           email?: string
           full_name?: string | null
           avatar_url?: string | null
-          role?: 'admin' | 'manager' | 'viewer'
+          role?: 'admin' | 'manager' | 'viewer' | 'artist' | 'agent'
         }
         Relationships: []
       }
@@ -42,6 +42,7 @@ export interface Database {
           spotify_refresh_token: string | null
           spotify_token_expires_at: string | null
           manager_id: string
+          user_id: string | null
           status: 'active' | 'inactive' | 'pending'
           bio: string | null
           avatar_url: string | null
@@ -60,6 +61,7 @@ export interface Database {
           spotify_refresh_token?: string | null
           spotify_token_expires_at?: string | null
           manager_id: string
+          user_id?: string | null
           status?: 'active' | 'inactive' | 'pending'
           bio?: string | null
           avatar_url?: string | null
@@ -76,6 +78,7 @@ export interface Database {
           spotify_refresh_token?: string | null
           spotify_token_expires_at?: string | null
           manager_id?: string
+          user_id?: string | null
           status?: 'active' | 'inactive' | 'pending'
           bio?: string | null
           avatar_url?: string | null
@@ -143,6 +146,12 @@ export interface Database {
           contact_name: string | null
           contact_email: string | null
           website: string | null
+          talent_buyer: string | null
+          booking_email: string | null
+          typical_genres: string | null
+          sell_radius: string | null
+          other_shows: Json | null
+          intel: Json | null
           created_at: string
           updated_at: string
         }
@@ -156,6 +165,12 @@ export interface Database {
           contact_name?: string | null
           contact_email?: string | null
           website?: string | null
+          talent_buyer?: string | null
+          booking_email?: string | null
+          typical_genres?: string | null
+          sell_radius?: string | null
+          other_shows?: Json | null
+          intel?: Json | null
         }
         Update: {
           id?: string
@@ -167,6 +182,12 @@ export interface Database {
           contact_name?: string | null
           contact_email?: string | null
           website?: string | null
+          talent_buyer?: string | null
+          booking_email?: string | null
+          typical_genres?: string | null
+          sell_radius?: string | null
+          other_shows?: Json | null
+          intel?: Json | null
         }
         Relationships: []
       }
@@ -310,6 +331,218 @@ export interface Database {
         }
         Relationships: []
       }
+      catalog: {
+        Row: {
+          id: string
+          artist_id: string
+          title: string
+          type: string
+          bucket: 'released_full' | 'soundcloud_only' | 'unreleased_collab' | 'wip' | 'vault'
+          release_date: string | null
+          isrc: string | null
+          upc: string | null
+          distributor: string | null
+          streams: number | null
+          spotify_track_id: string | null
+          notes: string | null
+          artwork_url: string | null
+          streaming_url: string | null
+          collaborators: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          artist_id: string
+          title: string
+          type?: string
+          bucket?: 'released_full' | 'soundcloud_only' | 'unreleased_collab' | 'wip' | 'vault'
+          release_date?: string | null
+          isrc?: string | null
+          upc?: string | null
+          distributor?: string | null
+          streams?: number | null
+          spotify_track_id?: string | null
+          notes?: string | null
+          artwork_url?: string | null
+          streaming_url?: string | null
+          collaborators?: string | null
+        }
+        Update: {
+          id?: string
+          artist_id?: string
+          title?: string
+          type?: string
+          bucket?: 'released_full' | 'soundcloud_only' | 'unreleased_collab' | 'wip' | 'vault'
+          release_date?: string | null
+          isrc?: string | null
+          upc?: string | null
+          distributor?: string | null
+          streams?: number | null
+          spotify_track_id?: string | null
+          notes?: string | null
+          artwork_url?: string | null
+          streaming_url?: string | null
+          collaborators?: string | null
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          id: string
+          artist_id: string | null
+          assigned_to: string | null
+          title: string
+          description: string | null
+          type: 'show' | 'release' | 'promo' | 'general'
+          status: 'todo' | 'in_progress' | 'done'
+          due_date: string | null
+          deal_id: string | null
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          artist_id?: string | null
+          assigned_to?: string | null
+          title: string
+          description?: string | null
+          type?: 'show' | 'release' | 'promo' | 'general'
+          status?: 'todo' | 'in_progress' | 'done'
+          due_date?: string | null
+          deal_id?: string | null
+          created_by: string
+        }
+        Update: {
+          id?: string
+          artist_id?: string | null
+          assigned_to?: string | null
+          title?: string
+          description?: string | null
+          type?: 'show' | 'release' | 'promo' | 'general'
+          status?: 'todo' | 'in_progress' | 'done'
+          due_date?: string | null
+          deal_id?: string | null
+          created_by?: string
+        }
+        Relationships: []
+      }
+      artist_members: {
+        Row: {
+          id: string
+          artist_id: string
+          user_id: string | null
+          email: string
+          name: string
+          role: 'admin' | 'artist' | 'agent'
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          artist_id: string
+          user_id?: string | null
+          email: string
+          name: string
+          role: 'admin' | 'artist' | 'agent'
+        }
+        Update: {
+          id?: string
+          artist_id?: string
+          user_id?: string | null
+          email?: string
+          name?: string
+          role?: 'admin' | 'artist' | 'agent'
+        }
+        Relationships: []
+      }
+      deal_threads: {
+        Row: {
+          id: string
+          deal_id: string
+          type: 'offer' | 'marketing' | 'advance' | 'contract'
+          subject: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          deal_id: string
+          type: 'offer' | 'marketing' | 'advance' | 'contract'
+          subject?: string | null
+        }
+        Update: {
+          id?: string
+          deal_id?: string
+          type?: 'offer' | 'marketing' | 'advance' | 'contract'
+          subject?: string | null
+        }
+        Relationships: []
+      }
+      deal_messages: {
+        Row: {
+          id: string
+          thread_id: string
+          sender_name: string
+          sender_email: string | null
+          direction: 'inbound' | 'outbound' | 'internal'
+          body: string
+          gmail_message_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          thread_id: string
+          sender_name: string
+          sender_email?: string | null
+          direction: 'inbound' | 'outbound' | 'internal'
+          body: string
+          gmail_message_id?: string | null
+        }
+        Update: {
+          id?: string
+          thread_id?: string
+          sender_name?: string
+          sender_email?: string | null
+          direction?: 'inbound' | 'outbound' | 'internal'
+          body?: string
+          gmail_message_id?: string | null
+        }
+        Relationships: []
+      }
+      deal_attachments: {
+        Row: {
+          id: string
+          deal_id: string
+          thread_id: string | null
+          filename: string
+          mime_type: string
+          storage_path: string
+          parsed_data: Json | null
+          uploaded_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          deal_id: string
+          thread_id?: string | null
+          filename: string
+          mime_type: string
+          storage_path: string
+          parsed_data?: Json | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          id?: string
+          deal_id?: string
+          thread_id?: string | null
+          filename?: string
+          mime_type?: string
+          storage_path?: string
+          parsed_data?: Json | null
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       agent_conversations: {
         Row: {
           id: string
@@ -340,7 +573,7 @@ export interface Database {
     Views: Record<string, never>
     Functions: Record<string, never>
     Enums: {
-      user_role: 'admin' | 'manager' | 'viewer'
+      user_role: 'admin' | 'manager' | 'viewer' | 'artist' | 'agent'
       deal_status: 'inquiry' | 'offer' | 'negotiating' | 'confirmed' | 'completed' | 'cancelled'
       artist_status: 'active' | 'inactive' | 'pending'
       contract_status: 'draft' | 'sent' | 'signed' | 'voided'
@@ -357,3 +590,9 @@ export type Promoter = Database['public']['Tables']['promoters']['Row']
 export type GmailConnection = Database['public']['Tables']['gmail_connections']['Row']
 export type Contract = Database['public']['Tables']['contracts']['Row']
 export type AgentConversation = Database['public']['Tables']['agent_conversations']['Row']
+export type CatalogTrack = Database['public']['Tables']['catalog']['Row']
+export type Task = Database['public']['Tables']['tasks']['Row']
+export type ArtistMember = Database['public']['Tables']['artist_members']['Row']
+export type DealThread = Database['public']['Tables']['deal_threads']['Row']
+export type DealMessage = Database['public']['Tables']['deal_messages']['Row']
+export type DealAttachment = Database['public']['Tables']['deal_attachments']['Row']
