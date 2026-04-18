@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import OutreachClient from './OutreachClient'
+import SmartOutreachClient from './SmartOutreachClient'
 
 export const metadata = { title: 'Outreach — TENx10' }
 
@@ -15,7 +15,6 @@ export default async function OutreachPage() {
     .order('region', { ascending: true })
     .order('name', { ascending: true })
 
-  // Auto-seed if table empty
   let initialContacts = contacts ?? []
   if (!initialContacts.length) {
     const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/api/contacts`, {
@@ -28,14 +27,14 @@ export default async function OutreachPage() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
+    <div className="p-6 max-w-5xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Outreach</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Generate AI-powered booking pitches and track your promoter outreach.
+          Smart booking outreach — warm leads first, relationship-aware pitches, live show discovery.
         </p>
       </div>
-      <OutreachClient initialContacts={initialContacts} />
+      <SmartOutreachClient initialContacts={initialContacts} />
     </div>
   )
 }
