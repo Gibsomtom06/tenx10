@@ -57,31 +57,42 @@ DROP TRIGGER IF EXISTS tasks_updated_at ON tasks;
 CREATE TRIGGER tasks_updated_at BEFORE UPDATE ON tasks FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ── 006: backfill deal_points from venues/promoters ──────────
-UPDATE deals d
+WITH deal_data AS (
+  SELECT d.id AS deal_id, v.city, v.state, v.name AS venue_name,
+         p.name AS promoter_name, p.email AS promoter_email, p.phone AS promoter_phone
+  FROM deals d
+  JOIN venues v ON v.id = d.venue_id
+  LEFT JOIN promoters p ON p.id = d.promoter_id
+  WHERE d.deal_points IS NULL OR d.deal_points = '{}'
+)
+UPDATE deals
 SET deal_points = jsonb_build_object(
-  'city',          COALESCE(v.city, ''),
-  'state',         COALESCE(v.state, ''),
-  'venue',         COALESCE(v.name, ''),
-  'promoterName',  COALESCE(p.name, ''),
-  'promoterEmail', COALESCE(p.email, ''),
-  'promoterPhone', COALESCE(p.phone, '')
+  'city',          COALESCE(dd.city, ''),
+  'state',         COALESCE(dd.state, ''),
+  'venue',         COALESCE(dd.venue_name, ''),
+  'promoterName',  COALESCE(dd.promoter_name, ''),
+  'promoterEmail', COALESCE(dd.promoter_email, ''),
+  'promoterPhone', COALESCE(dd.promoter_phone, '')
 )
-FROM venues v
-LEFT JOIN promoters p ON p.id = d.promoter_id
-WHERE d.venue_id = v.id
-  AND (d.deal_points IS NULL OR d.deal_points = '{}');
+FROM deal_data dd
+WHERE deals.id = dd.deal_id;
 
-UPDATE deals d
-SET deal_points = d.deal_points || jsonb_build_object(
-  'city',  COALESCE(v.city, ''),
-  'state', COALESCE(v.state, ''),
-  'venue', COALESCE(v.name, '')
+WITH deal_data2 AS (
+  SELECT d.id AS deal_id, v.city, v.state, v.name AS venue_name
+  FROM deals d
+  JOIN venues v ON v.id = d.venue_id
+  WHERE d.deal_points IS NOT NULL
+    AND d.deal_points != '{}'
+    AND (d.deal_points->>'city' IS NULL OR d.deal_points->>'city' = '')
 )
-FROM venues v
-WHERE d.venue_id = v.id
-  AND d.deal_points IS NOT NULL
-  AND d.deal_points != '{}'
-  AND (d.deal_points->>'city' IS NULL OR d.deal_points->>'city' = '');
+UPDATE deals
+SET deal_points = deals.deal_points || jsonb_build_object(
+  'city',  COALESCE(dd2.city, ''),
+  'state', COALESCE(dd2.state, ''),
+  'venue', COALESCE(dd2.venue_name, '')
+)
+FROM deal_data2 dd2
+WHERE deals.id = dd2.deal_id;
 
 -- ── 007: artist_members table ────────────────────────────────
 CREATE TABLE IF NOT EXISTS artist_members (
