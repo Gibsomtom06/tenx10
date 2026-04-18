@@ -2,13 +2,17 @@ import { createClient } from '@/lib/supabase/server'
 import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Mail, CheckCircle2 } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Mail, CheckCircle2, FileText } from 'lucide-react'
 import InboxClient from './InboxClient'
+import OfferAnalyzerClient from './OfferAnalyzerClient'
+
+export const metadata = { title: 'Gmail — TENx10' }
 
 export default async function GmailPage({
   searchParams,
 }: {
-  searchParams: Promise<{ connected?: string; error?: string }>
+  searchParams: Promise<{ connected?: string; error?: string; tab?: string }>
 }) {
   const params = await searchParams
   const supabase = await createClient()
@@ -24,7 +28,7 @@ export default async function GmailPage({
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Gmail</h1>
-        <p className="text-muted-foreground text-sm">Inbound booking offer → 6-step evaluation → counter draft → Gmail</p>
+        <p className="text-muted-foreground text-sm">Inbound offer pipeline + paste-offer analyzer</p>
       </div>
 
       {params.error && (
@@ -44,9 +48,7 @@ export default async function GmailPage({
             <Mail className="h-5 w-5" />
             Gmail Account
           </CardTitle>
-          <CardDescription>
-            Required for the offer-to-draft pipeline
-          </CardDescription>
+          <CardDescription>Required for the offer-to-draft pipeline</CardDescription>
         </CardHeader>
         <CardContent>
           {connection ? (
@@ -61,12 +63,28 @@ export default async function GmailPage({
         </CardContent>
       </Card>
 
-      {connection && (
-        <div>
-          <h2 className="text-lg font-semibold mb-3">Inbox</h2>
-          <InboxClient />
-        </div>
-      )}
+      <Tabs defaultValue={params.tab === 'analyze' ? 'analyze' : 'inbox'}>
+        <TabsList>
+          <TabsTrigger value="inbox" className="flex items-center gap-2">
+            <Mail className="h-4 w-4" /> Inbox
+          </TabsTrigger>
+          <TabsTrigger value="analyze" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" /> Paste Offer
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="inbox" className="mt-4">
+          {connection ? (
+            <InboxClient />
+          ) : (
+            <p className="text-sm text-muted-foreground py-4">Connect Gmail above to view your inbox.</p>
+          )}
+        </TabsContent>
+
+        <TabsContent value="analyze" className="mt-4">
+          <OfferAnalyzerClient />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
