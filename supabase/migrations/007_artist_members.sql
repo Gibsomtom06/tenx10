@@ -77,8 +77,10 @@ end $$;
 
 -- Fix artists RLS: members can select their artist
 drop policy if exists "Managers see own artists" on artists;
+drop policy if exists "artists_member_select" on artists;
+drop policy if exists "artists_manager_write" on artists;
 create policy "artists_member_select" on artists for select
-  using (manager_id = auth.uid() or user_id = auth.uid() or is_artist_member(id));
+  using (manager_id = auth.uid() or is_artist_member(id));
 create policy "artists_manager_write" on artists for all
   using (manager_id = auth.uid());
 
