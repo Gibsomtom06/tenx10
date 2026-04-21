@@ -208,6 +208,50 @@ const HIGHLIGHTS = [
   },
 ]
 
+function EarlyAccessForm({
+  email, setEmail, onSubmit, loading, sent,
+  compact = false,
+}: {
+  email: string
+  setEmail: (v: string) => void
+  onSubmit: () => void
+  loading: boolean
+  sent: boolean
+  compact?: boolean
+}) {
+  if (sent) {
+    return (
+      <div className="inline-flex items-center gap-3 bg-green-500/10 border border-green-500/30 rounded-xl px-6 py-4 text-green-600 dark:text-green-400">
+        <CheckCircle2 className="h-5 w-5 shrink-0" />
+        <div className="text-left">
+          <p className="font-semibold text-sm">Check your email</p>
+          <p className="text-xs text-green-600/70 dark:text-green-400/70">Magic link sent to {email}</p>
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className={`flex flex-col sm:flex-row gap-3 ${compact ? 'max-w-sm' : 'max-w-md'} ${compact ? '' : 'mx-auto'}`}>
+      <Input
+        type="email"
+        placeholder="your@email.com"
+        value={email}
+        onChange={e => setEmail(e.target.value)}
+        onKeyDown={e => e.key === 'Enter' && onSubmit()}
+        className={compact ? 'h-11' : 'h-12 text-base'}
+      />
+      <Button
+        size={compact ? 'default' : 'lg'}
+        onClick={onSubmit}
+        disabled={loading || !email}
+        className={`${compact ? 'h-11' : 'h-12 px-8'} font-bold shrink-0 gap-2`}
+      >
+        {loading ? 'Sending...' : <><ArrowRight className="h-4 w-4" /> Get Access</>}
+      </Button>
+    </div>
+  )
+}
+
 export default function HomepageClient() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
@@ -232,37 +276,6 @@ export default function HomepageClient() {
       setSent(true)
     }
   }
-
-  const EarlyAccessForm = ({ compact = false }: { compact?: boolean }) => (
-    sent ? (
-      <div className="inline-flex items-center gap-3 bg-green-500/10 border border-green-500/30 rounded-xl px-6 py-4 text-green-600 dark:text-green-400">
-        <CheckCircle2 className="h-5 w-5 shrink-0" />
-        <div className="text-left">
-          <p className="font-semibold text-sm">Check your email</p>
-          <p className="text-xs text-green-600/70 dark:text-green-400/70">Magic link sent to {email}</p>
-        </div>
-      </div>
-    ) : (
-      <div className={`flex flex-col sm:flex-row gap-3 ${compact ? 'max-w-sm' : 'max-w-md'} ${compact ? '' : 'mx-auto'}`}>
-        <Input
-          type="email"
-          placeholder="your@email.com"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleAccess()}
-          className={compact ? 'h-11' : 'h-12 text-base'}
-        />
-        <Button
-          size={compact ? 'default' : 'lg'}
-          onClick={handleAccess}
-          disabled={loading || !email}
-          className={`${compact ? 'h-11' : 'h-12 px-8'} font-bold shrink-0 gap-2`}
-        >
-          {loading ? 'Sending...' : <><ArrowRight className="h-4 w-4" /> Get Access</>}
-        </Button>
-      </div>
-    )
-  )
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -309,7 +322,7 @@ export default function HomepageClient() {
         </p>
 
         <div id="access-form" className="mb-4">
-          <EarlyAccessForm />
+          <EarlyAccessForm email={email} setEmail={setEmail} onSubmit={handleAccess} loading={loading} sent={sent} />
         </div>
         {error && <p className="text-sm text-destructive mt-3">{error}</p>}
         <p className="text-xs text-muted-foreground mt-3">No password. Magic link sent to your inbox.</p>
@@ -547,7 +560,7 @@ export default function HomepageClient() {
           <p className="text-muted-foreground mb-8 max-w-lg mx-auto leading-relaxed">
             Join the artists and managers already using TENx10. No password — just your email and a magic link.
           </p>
-          <EarlyAccessForm compact />
+          <EarlyAccessForm email={email} setEmail={setEmail} onSubmit={handleAccess} loading={loading} sent={sent} compact />
           {error && <p className="text-sm text-destructive mt-3">{error}</p>}
         </div>
       </section>
