@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { PITCH_ARTISTS, type PitchArtistSlug } from '@/lib/outreach/artist-profiles'
+import { PITCH_ARTISTS, LABEL_ONLY_ARTISTS, type AnyArtistSlug } from '@/lib/outreach/artist-profiles'
 
 export interface EPKData {
   artist: {
@@ -33,11 +33,12 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { artistSlug } = await request.json() as { artistSlug: PitchArtistSlug }
-  const artist = PITCH_ARTISTS[artistSlug]
-  if (!artist) return NextResponse.json({ error: 'Unknown artist' }, { status: 400 })
+  const { artistSlug } = await request.json() as { artistSlug: AnyArtistSlug }
+  const artist = PITCH_ARTISTS[artistSlug as keyof typeof PITCH_ARTISTS]
+  const labelOnlyArtist = LABEL_ONLY_ARTISTS[artistSlug as keyof typeof LABEL_ONLY_ARTISTS]
+  if (!artist && !labelOnlyArtist) return NextResponse.json({ error: 'Unknown artist' }, { status: 400 })
 
-  const SOCIAL_LINKS: Record<PitchArtistSlug, EPKData['social']> = {
+  const SOCIAL_LINKS: Record<AnyArtistSlug, EPKData['social']> = {
     dirtysnatcha: {
       spotify: 'open.spotify.com/artist/DirtySnatcha',
       instagram: 'instagram.com/dirtysnatcha',
@@ -94,25 +95,50 @@ export async function POST(request: NextRequest) {
     },
   }
 
+  // Label-only artists (OZZTIN, MAVIC, PRIYANX) — catalog info only, Thomas does not manage booking
+  if (labelOnlyArtist) {
+    const epk: EPKData = {
+      artist: {
+        name: labelOnlyArtist.name,
+        genre: labelOnlyArtist.genre,
+        bio: `${labelOnlyArtist.name} is a ${labelOnlyArtist.genre} artist on DirtySnatcha Records.`,
+        metrics: '',
+        topTracks: '',
+        tourHistory: '',
+        guarantee: 'Contact artist directly',
+      },
+      booking: {
+        contact: 'Contact artist directly',
+        email: '',
+        manager: 'DirtySnatcha Records',
+        managerEmail: 'thomas@dirtysnatcha.com',
+        managerPhone: '248-765-1997',
+      },
+      social: SOCIAL_LINKS[artistSlug],
+      pressText: `${labelOnlyArtist.name} is a ${labelOnlyArtist.genre} artist on DirtySnatcha Records.`,
+    }
+    return NextResponse.json(epk)
+  }
+
   const epk: EPKData = {
     artist: {
-      name: artist.name,
-      genre: artist.genre,
-      bio: artist.bio,
-      metrics: artist.metrics,
-      topTracks: artist.topTracks ?? '',
-      tourHistory: artist.tourHistory ?? '',
-      guarantee: artist.guarantee,
+      name: artist!.name,
+      genre: artist!.genre,
+      bio: artist!.bio,
+      metrics: artist!.metrics,
+      topTracks: artist!.topTracks ?? '',
+      tourHistory: artist!.tourHistory ?? '',
+      guarantee: artist!.guarantee,
     },
     booking: {
-      contact: artist.bookingContact,
-      email: artist.bookingEmail,
+      contact: artist!.bookingContact,
+      email: artist!.bookingEmail,
       manager: 'Thomas Nalian',
       managerEmail: 'thomas@dirtysnatcha.com',
       managerPhone: '248-765-1997',
     },
     social: SOCIAL_LINKS[artistSlug],
-    pressText: `${artist.name} is a ${artist.genre} artist${artist.tourHistory ? ` currently on ${artist.tourHistory.split('—')[0].trim()}` : ''}. ${artist.bio} Booking: ${artist.bookingEmail}`,
+    pressText: `${artist!.name} is a ${artist!.genre} artist${artist!.tourHistory ? ` currently on ${artist!.tourHistory.split('—')[0].trim()}` : ''}. ${artist!.bio} Booking: ${artist!.bookingEmail}`,
   }
 
   return NextResponse.json(epk)

@@ -160,15 +160,13 @@ End with Thomas Nalian's contact info: thomas@dirtysnatcha.com / 248-765-1997`,
     .update({ pitch_status: 'drafted', last_pitched_at: new Date().toISOString() })
     .eq('id', contactId)
 
+  // Managed artists only — OZZTIN, MAVIC, PRIYANX are label-only (not managed, never pitch)
   const SLUG_TO_ARTIST_ID: Record<string, string> = {
     'dirtysnatcha':  '3816c060-2bee-4b0e-bb27-90e8fa6392c8',
     'whoisee':       'dcc18841-25d9-4d2b-9f14-d6e9f8e0660f',
     'hvrcrft':       '21454e1e-c069-4f81-b4d6-051f68b8afd6',
     'dark-matter':   '8a3fbde2-f840-455c-97be-86d976566e42',
     'kotrax':        '868ebd5b-1b8a-47f6-9267-9f091a8ad8e9',
-    'ozztin':        '42519bb7-622e-42f3-a77d-9a91d945a802',
-    'mavic':         '520a709a-7488-4ef7-ad94-428ca1af33ad',
-    'priyanx':       '79fc38db-adfb-4ac2-a393-cfd10d6302fa',
     'dsr-takeover':  '3816c060-2bee-4b0e-bb27-90e8fa6392c8',
   }
 

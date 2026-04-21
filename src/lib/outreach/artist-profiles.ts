@@ -1,4 +1,29 @@
-export type PitchArtistSlug = 'dirtysnatcha' | 'whoisee' | 'hvrcrft' | 'dark-matter' | 'kotrax' | 'ozztin' | 'mavic' | 'priyanx' | 'dsr-takeover'
+// ─────────────────────────────────────────────────────────────────────────────
+// ROSTER CLASSIFICATION
+//
+// Managed artists — Thomas books & manages these.
+//   Label: DirtySnatcha, WHOiSEE
+//   Management only (not on DSR): HVRCRFT, Dark Matter, Kotrax
+//
+// Label-only artists — Released on DSR but Thomas does NOT manage their booking.
+//   OZZTIN, MAVIC, PRIYANX
+//   Use LABEL_ONLY_ARTISTS for catalog / A&R work. Never pitch their booking.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Artists Thomas actively manages — eligible for booking pitch generation */
+export type PitchArtistSlug =
+  | 'dirtysnatcha'
+  | 'whoisee'
+  | 'hvrcrft'
+  | 'dark-matter'
+  | 'kotrax'
+  | 'dsr-takeover'
+
+/** Artists on the DSR label but NOT managed by Thomas */
+export type LabelOnlySlug = 'ozztin' | 'mavic' | 'priyanx'
+
+/** All DSR-affiliated slugs (managed + label-only) */
+export type AnyArtistSlug = PitchArtistSlug | LabelOnlySlug
 
 export interface PitchArtist {
   slug: PitchArtistSlug
@@ -66,36 +91,6 @@ export const PITCH_ARTISTS: Record<PitchArtistSlug, PitchArtist> = {
     bookingContact: 'Thomas Nalian — DirtySnatcha Records Management',
     bookingEmail: 'thomas@dirtysnatcha.com',
   },
-  ozztin: {
-    slug: 'ozztin',
-    name: 'OZZTIN',
-    genre: 'Bass Music / Dubstep',
-    bio: 'OZZTIN is a DirtySnatcha Records artist delivering hard-hitting bass music with high TikTok traction and a rapidly growing social following.',
-    metrics: 'Strong TikTok growth | DSR artist | Active release schedule',
-    guarantee: '$500 – $1,500 depending on market',
-    bookingContact: 'Thomas Nalian — DirtySnatcha Records Management',
-    bookingEmail: 'thomas@dirtysnatcha.com',
-  },
-  mavic: {
-    slug: 'mavic',
-    name: 'MAVIC',
-    genre: 'Bass Music / Electronic',
-    bio: 'MAVIC is a DirtySnatcha Records artist bringing hard-hitting electronic production with a distinct sound and growing fan presence.',
-    metrics: 'DSR artist | Growing fanbase | Active touring',
-    guarantee: '$500 – $1,000 depending on market',
-    bookingContact: 'Thomas Nalian — DirtySnatcha Records Management',
-    bookingEmail: 'thomas@dirtysnatcha.com',
-  },
-  priyanx: {
-    slug: 'priyanx',
-    name: 'PRIYANX',
-    genre: 'Bass Music / Electronic',
-    bio: 'PRIYANX is a DirtySnatcha Records artist with a unique sonic identity in the bass music space and a dedicated following.',
-    metrics: 'DSR artist | Growing presence | Distinctive sound',
-    guarantee: '$500 – $1,000 depending on market',
-    bookingContact: 'Thomas Nalian — DirtySnatcha Records Management',
-    bookingEmail: 'thomas@dirtysnatcha.com',
-  },
   'dsr-takeover': {
     slug: 'dsr-takeover',
     name: 'DSR Takeover',
@@ -110,4 +105,12 @@ export const PITCH_ARTISTS: Record<PitchArtistSlug, PitchArtist> = {
 
 export const PITCH_ARTIST_LIST = Object.values(PITCH_ARTISTS)
 
+/** Label-only artists — catalog info only, do not use for booking pitch generation */
+export const LABEL_ONLY_ARTISTS: Record<LabelOnlySlug, { name: string; genre: string }> = {
+  ozztin:  { name: 'OZZTIN',  genre: 'Bass Music / Dubstep' },
+  mavic:   { name: 'MAVIC',   genre: 'Bass Music / Electronic' },
+  priyanx: { name: 'PRIYANX', genre: 'Bass Music / Electronic' },
+}
+
+/** @deprecated - kept for backwards compat */
 export const INBOUND_ONLY_ARTISTS = [] as const
