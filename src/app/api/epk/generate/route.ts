@@ -62,6 +62,30 @@ export async function POST(request: NextRequest) {
       soundcloud: 'soundcloud.com/kotrax',
       facebook: '',
     },
+    whoisee: {
+      spotify: 'open.spotify.com/artist/WHOiSEE',
+      instagram: 'instagram.com/whoiseemusic',
+      soundcloud: 'soundcloud.com/whoisee',
+      facebook: '',
+    },
+    ozztin: {
+      spotify: 'open.spotify.com/artist/OZZTIN',
+      instagram: 'instagram.com/ozztin',
+      soundcloud: 'soundcloud.com/ozztin',
+      facebook: '',
+    },
+    mavic: {
+      spotify: 'open.spotify.com/artist/MAVIC',
+      instagram: 'instagram.com/mavicmusic',
+      soundcloud: 'soundcloud.com/mavic',
+      facebook: '',
+    },
+    priyanx: {
+      spotify: 'open.spotify.com/artist/PRIYANX',
+      instagram: 'instagram.com/priyanx',
+      soundcloud: 'soundcloud.com/priyanx',
+      facebook: '',
+    },
     'dsr-takeover': {
       spotify: 'open.spotify.com/artist/DirtySnatcha',
       instagram: 'instagram.com/dirtysnatchaRecords',

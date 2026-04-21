@@ -14,10 +14,23 @@ export function getAuthUrl(state?: string) {
     access_type: 'offline',
     prompt: 'consent',
     scope: [
+      // Gmail
       'https://www.googleapis.com/auth/gmail.readonly',
       'https://www.googleapis.com/auth/gmail.compose',
       'https://www.googleapis.com/auth/gmail.send',
+      'https://www.googleapis.com/auth/gmail.labels',
+      'https://www.googleapis.com/auth/gmail.modify',
+      // Google Drive
+      'https://www.googleapis.com/auth/drive',
+      'https://www.googleapis.com/auth/drive.file',
+      // Google Photos
+      'https://www.googleapis.com/auth/photoslibrary',
+      // YouTube
+      'https://www.googleapis.com/auth/youtube.readonly',
+      'https://www.googleapis.com/auth/yt-analytics.readonly',
+      // User info
       'https://www.googleapis.com/auth/userinfo.email',
+      'https://www.googleapis.com/auth/userinfo.profile',
     ],
     state,
   })

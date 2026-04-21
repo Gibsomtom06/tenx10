@@ -145,33 +145,36 @@ async function importContacts(contacts: GigwellContact[]) {
   console.log(`\nImporting ${contacts.length} contacts...`)
   let imported = 0, skipped = 0
 
+  // Get existing contact names to avoid duplicates
+  const { data: existing } = await supabase.from('contacts').select('name')
+  const existingNames = new Set((existing ?? []).map(r => r.name.toLowerCase().trim()))
+
   for (const c of contacts) {
-    if (!c.name?.trim()) { skipped++; continue }
+    const name = c.name?.trim()
+    if (!name) { skipped++; continue }
+    if (existingNames.has(name.toLowerCase())) { skipped++; continue }
 
     const { error } = await supabase
       .from('contacts')
-      .upsert({
-        name: c.name.trim(),
+      .insert({
+        name,
         company: c.company?.trim() ?? null,
         email: c.email?.trim()?.toLowerCase() ?? null,
         phone: c.phone?.trim() ?? null,
         city: c.city?.trim() ?? null,
         state: c.state?.trim() ?? null,
-        pitch_status: 'existing',
-        notes: c.gigwellId ? `Imported from Gigwell (ID: ${c.gigwellId})` : 'Imported from Gigwell',
-      }, {
-        onConflict: 'email',
-        ignoreDuplicates: false,
+        pitch_status: 'not_contacted',
+        notes: c.gigwellId ? `Gigwell ID: ${c.gigwellId}` : 'Imported from Gigwell',
       })
 
     if (error) {
-      // Email conflicts are fine — contact already exists
-      if (!error.message.includes('duplicate')) {
-        console.log(`  ⚠ Contact "${c.name}": ${error.message}`)
+      if (!error.message.includes('duplicate') && !error.message.includes('unique')) {
+        console.log(`  ⚠ Contact "${name}": ${error.message}`)
       }
       skipped++
     } else {
       imported++
+      existingNames.add(name.toLowerCase())
     }
   }
 
@@ -206,13 +209,38 @@ async function importVenues(venues: GigwellVenue[]) {
   console.log(`  ✓ ${imported} imported, ${skipped} skipped/existing`)
 }
 
+async function getAdminUserId(): Promise<string | null> {
+  // Use service role to get any authenticated user (Thomas)
+  const { data } = await supabase.auth.admin.listUsers()
+  if (data?.users?.length) return data.users[0].id
+  return null
+}
+
 async function importBookings(bookings: GigwellBooking[], artistId: string, slug = 'dirtysnatcha') {
   console.log(`\nImporting ${bookings.length} bookings...`)
+
+  const adminUserId = await getAdminUserId()
+  if (!adminUserId) {
+    console.error('  ✗ Could not find admin user ID for created_by. Skipping bookings.')
+    return
+  }
+  console.log(`  Using created_by: ${adminUserId}`)
+
   let imported = 0, skipped = 0
+
+  // Get existing Gigwell IDs to avoid re-importing
+  const { data: existingDeals } = await supabase.from('deals').select('deal_points')
+  const existingGigwellIds = new Set(
+    (existingDeals ?? [])
+      .map(d => (d.deal_points as { gigwellId?: string })?.gigwellId)
+      .filter(Boolean)
+  )
 
   for (const b of bookings) {
     // Skip entries with no usable data
     if (!b.date && !b.city && !b.title) { skipped++; continue }
+    // Skip already imported
+    if (b.gigwellId && existingGigwellIds.has(b.gigwellId)) { skipped++; continue }
 
     const status = normalizeStatus(b.status)
     const showDate = parseDate(b.date)
@@ -233,6 +261,7 @@ async function importBookings(bookings: GigwellBooking[], artistId: string, slug
         show_date: showDate,
         offer_amount: guarantee,
         status,
+        created_by: adminUserId,
         notes: [
           b.notes?.trim(),
           b.gigwellId ? `Gigwell ID: ${b.gigwellId}` : null,
@@ -247,6 +276,7 @@ async function importBookings(bookings: GigwellBooking[], artistId: string, slug
           capacity: b.capacity ?? null,
           importSource: 'gigwell',
           artistSlug: slug,
+          gigwellId: b.gigwellId ?? null,
         },
       })
 
@@ -255,6 +285,7 @@ async function importBookings(bookings: GigwellBooking[], artistId: string, slug
       skipped++
     } else {
       imported++
+      if (b.gigwellId) existingGigwellIds.add(b.gigwellId)
     }
   }
 
@@ -312,9 +343,12 @@ async function main() {
   }
   console.log(`\nArtist ID: ${artistId}`)
 
-  await importContacts(data.contacts)
-  await importVenues(data.venues)
-  await importBookings(data.bookings, artistId, slug)
+  const onlyContacts = process.argv.includes('--contacts-only')
+  const onlyBookings = process.argv.includes('--bookings-only')
+
+  if (!onlyBookings) await importContacts(data.contacts)
+  if (!onlyContacts && !onlyBookings) await importVenues(data.venues)
+  if (!onlyContacts) await importBookings(data.bookings, artistId, slug)
 
   console.log('\n✓ Import complete.')
   console.log('  /artist/pipeline — to see imported deals')

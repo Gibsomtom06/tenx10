@@ -1,4 +1,4 @@
-export type PitchArtistSlug = 'dirtysnatcha' | 'hvrcrft' | 'dark-matter' | 'kotrax' | 'dsr-takeover'
+export type PitchArtistSlug = 'dirtysnatcha' | 'whoisee' | 'hvrcrft' | 'dark-matter' | 'kotrax' | 'ozztin' | 'mavic' | 'priyanx' | 'dsr-takeover'
 
 export interface PitchArtist {
   slug: PitchArtistSlug
@@ -56,6 +56,46 @@ export const PITCH_ARTISTS: Record<PitchArtistSlug, PitchArtist> = {
     bookingContact: 'Thomas Nalian — DirtySnatcha Records Management',
     bookingEmail: 'thomas@dirtysnatcha.com',
   },
+  whoisee: {
+    slug: 'whoisee',
+    name: 'WHOiSEE',
+    genre: 'Dubstep / Bass Music',
+    bio: 'WHOiSEE is a fast-rising dubstep and bass music producer on DirtySnatcha Records with a growing national profile and a loyal fanbase in the underground bass scene.',
+    metrics: 'Growing national presence | DSR artist | Strong online engagement',
+    guarantee: '$500 – $2,000 depending on market',
+    bookingContact: 'Thomas Nalian — DirtySnatcha Records Management',
+    bookingEmail: 'thomas@dirtysnatcha.com',
+  },
+  ozztin: {
+    slug: 'ozztin',
+    name: 'OZZTIN',
+    genre: 'Bass Music / Dubstep',
+    bio: 'OZZTIN is a DirtySnatcha Records artist delivering hard-hitting bass music with high TikTok traction and a rapidly growing social following.',
+    metrics: 'Strong TikTok growth | DSR artist | Active release schedule',
+    guarantee: '$500 – $1,500 depending on market',
+    bookingContact: 'Thomas Nalian — DirtySnatcha Records Management',
+    bookingEmail: 'thomas@dirtysnatcha.com',
+  },
+  mavic: {
+    slug: 'mavic',
+    name: 'MAVIC',
+    genre: 'Bass Music / Electronic',
+    bio: 'MAVIC is a DirtySnatcha Records artist bringing hard-hitting electronic production with a distinct sound and growing fan presence.',
+    metrics: 'DSR artist | Growing fanbase | Active touring',
+    guarantee: '$500 – $1,000 depending on market',
+    bookingContact: 'Thomas Nalian — DirtySnatcha Records Management',
+    bookingEmail: 'thomas@dirtysnatcha.com',
+  },
+  priyanx: {
+    slug: 'priyanx',
+    name: 'PRIYANX',
+    genre: 'Bass Music / Electronic',
+    bio: 'PRIYANX is a DirtySnatcha Records artist with a unique sonic identity in the bass music space and a dedicated following.',
+    metrics: 'DSR artist | Growing presence | Distinctive sound',
+    guarantee: '$500 – $1,000 depending on market',
+    bookingContact: 'Thomas Nalian — DirtySnatcha Records Management',
+    bookingEmail: 'thomas@dirtysnatcha.com',
+  },
   'dsr-takeover': {
     slug: 'dsr-takeover',
     name: 'DSR Takeover',
@@ -70,5 +110,4 @@ export const PITCH_ARTISTS: Record<PitchArtistSlug, PitchArtist> = {
 
 export const PITCH_ARTIST_LIST = Object.values(PITCH_ARTISTS)
 
-// WHOiSEE is INBOUND ONLY — offers come from Brian, not pitched outbound
-export const INBOUND_ONLY_ARTISTS = ['whoisee'] as const
+export const INBOUND_ONLY_ARTISTS = [] as const

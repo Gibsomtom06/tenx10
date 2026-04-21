@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import BriefingClient from './BriefingClient'
+import SmartOutreachClient from './SmartOutreachClient'
 import MarketEstimator from './MarketEstimator'
 
 export const metadata = { title: 'Outreach — TENx10' }
@@ -10,16 +10,22 @@ export default async function OutreachPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
+  const { data: contacts } = await supabase
+    .from('contacts')
+    .select('id,name,company,email,city,state,region,market_type,pitch_status,last_pitched_at,notes')
+    .order('pitch_status', { ascending: true })
+    .order('name', { ascending: true })
+
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
+    <div className="p-6 max-w-5xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Outreach</h1>
+        <h1 className="text-2xl font-bold">Booking Outreach</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Auto-briefing — routing windows, warm alerts, and new markets based on your current tour and relationships.
+          Pitch the full DSR roster. Routing gaps, warm contacts, and AI-generated pitches — all in one place.
         </p>
       </div>
       <MarketEstimator />
-      <BriefingClient />
+      <SmartOutreachClient initialContacts={contacts ?? []} />
     </div>
   )
 }
