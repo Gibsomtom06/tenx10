@@ -6,9 +6,8 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import {
-  Mail, HardDrive, FolderOpen, Zap, Shield,
-  CheckCircle2, ArrowRight, Bot, Inbox, Layers,
-  Clock, BarChart2, Lock,
+  Mail, HardDrive, FolderOpen, Shield,
+  CheckCircle2, ArrowRight, Bot, Inbox,
 } from 'lucide-react'
 
 const PROBLEMS = [
@@ -47,8 +46,8 @@ const FEATURES = [
   },
   {
     icon: Shield,
-    title: 'Local First, Privacy Focused',
-    desc: 'Runs on your machine using open-weight AI models. Your emails never leave your network. No third-party training on your data.',
+    title: 'Privacy First',
+    desc: 'Your emails never leave your network. No third-party training on your data. You stay in control.',
   },
 ]
 
@@ -56,7 +55,41 @@ const HOW_IT_WORKS = [
   { step: '01', title: 'Connect', desc: 'Link your email accounts and cloud drives in one click.' },
   { step: '02', title: 'Map', desc: 'DAD learns your businesses and builds a custom organization system for you.' },
   { step: '03', title: 'Run', desc: 'The autonomous agent runs on a schedule — cleaning, labeling, briefing — while you work.' },
-  { step: '04', title: 'Brief', desc: 'Wake up to a daily briefing: what needs attention, what\'s waiting, what\'s done.' },
+  { step: '04', title: 'Brief', desc: "Wake up to a daily briefing: what needs attention, what's waiting, what's done." },
+]
+
+const PRICING = [
+  {
+    name: 'Solo',
+    price: 39,
+    annual: 29,
+    desc: 'For founders running 1–3 businesses',
+    features: [
+      'Up to 3 email accounts',
+      'Up to 2 cloud drives',
+      'Daily briefing digest',
+      'Auto-label by business',
+      'File deduplication',
+    ],
+    cta: 'Start 14-Day Free Trial',
+    highlight: false,
+  },
+  {
+    name: 'Portfolio',
+    price: 69,
+    annual: 49,
+    desc: 'For operators running 4+ businesses',
+    features: [
+      'Up to 8 email accounts',
+      'Up to 5 cloud drives',
+      'Everything in Solo',
+      '2x daily runs',
+      'Business context memory',
+      'Slack/Notion briefing delivery',
+    ],
+    cta: 'Start 14-Day Free Trial',
+    highlight: true,
+  },
 ]
 
 export default function DADClient() {
@@ -65,6 +98,7 @@ export default function DADClient() {
   const [loading, setLoading] = useState(false)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [joined, setJoined] = useState(false)
+  const [billingAnnual, setBillingAnnual] = useState(false)
 
   const searchParams = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search)
@@ -95,7 +129,7 @@ export default function DADClient() {
     }
   }
 
-  async function handleCheckout() {
+  async function handleCheckout(tier: string) {
     if (!email) {
       toast.error('Enter your email first')
       return
@@ -105,11 +139,10 @@ export default function DADClient() {
       const res = await fetch('/api/dad-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, name, tier }),
       })
       const data = await res.json()
       if (data.url) {
-        // Also save to waitlist
         fetch('/api/dad-waitlist', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -138,8 +171,8 @@ export default function DADClient() {
           <span className="font-bold text-lg tracking-tight">DAD</span>
           <Badge variant="outline" className="text-xs border-white/20 text-white/50 ml-1">Beta</Badge>
         </div>
-        <a href="#waitlist" className="text-sm text-white/60 hover:text-white transition-colors">
-          Join Waitlist
+        <a href="#pricing" className="text-sm text-white/60 hover:text-white transition-colors">
+          Get Early Access
         </a>
       </nav>
 
@@ -149,11 +182,11 @@ export default function DADClient() {
           Autonomous AI for entrepreneurs
         </Badge>
         <h1 className="text-5xl sm:text-6xl font-black tracking-tight leading-[1.05] mb-6">
-          Your digital life,<br />
-          <span className="text-white/40">finally under control.</span>
+          You run 3 businesses.<br />
+          <span className="text-white/40">You shouldn't also run your inbox.</span>
         </h1>
         <p className="text-xl text-white/60 max-w-2xl mx-auto mb-10">
-          DAD is an autonomous AI agent that cleans and organizes your email accounts, cloud drives, and files — by business, by priority, by you. Runs while you sleep.
+          DAD connects all your email accounts and cloud drives, organizes everything by business, and sends you a daily briefing of what actually needs your attention — without you lifting a finger.
         </p>
 
         {/* Problems */}
@@ -165,63 +198,12 @@ export default function DADClient() {
           ))}
         </div>
 
-        {/* CTA */}
-        <div id="waitlist" className="max-w-md mx-auto">
-          {(joined || didPay) ? (
-            <div className="bg-white/5 border border-white/20 rounded-2xl p-8 text-center">
-              <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">
-                {didPay ? "You're in. Welcome to early access." : "You're on the list."}
-              </h3>
-              <p className="text-white/50 text-sm">
-                {didPay
-                  ? "Check your email for next steps. We'll get you set up ASAP."
-                  : "We'll reach out when early access opens. Expect something good."}
-              </p>
-            </div>
-          ) : (
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-left space-y-3">
-              <p className="text-sm text-white/50 font-medium uppercase tracking-widest mb-4">Get Early Access</p>
-              <Input
-                type="text"
-                placeholder="Your name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-white/20"
-              />
-              <Input
-                type="email"
-                placeholder="Your email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-white/20"
-              />
-              {/* Paid tier */}
-              <Button
-                type="button"
-                onClick={handleCheckout}
-                disabled={checkoutLoading || !email}
-                className="w-full bg-white text-black hover:bg-white/90 font-bold h-11"
-              >
-                {checkoutLoading ? 'Redirecting...' : (
-                  <span className="flex items-center gap-2">
-                    Start Early Access — $19/mo <ArrowRight className="w-4 h-4" />
-                  </span>
-                )}
-              </Button>
-              {/* Free waitlist */}
-              <button
-                type="button"
-                onClick={handleSubmit as any}
-                disabled={loading || !email}
-                className="w-full text-sm text-white/40 hover:text-white/70 transition-colors py-1"
-              >
-                {loading ? 'Joining...' : 'Or join free waitlist →'}
-              </button>
-              <p className="text-xs text-white/30 text-center">Cancel anytime. No contracts.</p>
-            </div>
-          )}
-        </div>
+        <a href="#pricing">
+          <Button size="lg" className="bg-white text-black hover:bg-white/90 font-bold h-12 px-8">
+            Start Free for 14 Days <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        </a>
+        <p className="text-white/30 text-sm mt-3">No credit card required. Cancel anytime.</p>
       </section>
 
       {/* Features */}
@@ -257,7 +239,7 @@ export default function DADClient() {
         </div>
       </section>
 
-      {/* Stats / social proof */}
+      {/* Stats */}
       <section className="max-w-4xl mx-auto px-6 py-20 border-t border-white/10">
         <div className="grid sm:grid-cols-3 gap-8 text-center">
           <div>
@@ -275,15 +257,140 @@ export default function DADClient() {
         </div>
       </section>
 
+      {/* Pricing */}
+      <section id="pricing" className="max-w-5xl mx-auto px-6 py-20 border-t border-white/10">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-black mb-4">Simple pricing</h2>
+          <p className="text-white/50 mb-8">14-day free trial. No credit card required. Early access members lock in pricing for life.</p>
+
+          {/* Billing toggle */}
+          <div className="flex items-center justify-center gap-3 mb-10">
+            <span className={`text-sm ${!billingAnnual ? 'text-white' : 'text-white/40'}`}>Monthly</span>
+            <button
+              onClick={() => setBillingAnnual(!billingAnnual)}
+              className={`relative w-12 h-6 rounded-full transition-colors ${billingAnnual ? 'bg-white' : 'bg-white/20'}`}
+            >
+              <span className={`absolute top-1 left-1 w-4 h-4 rounded-full transition-transform ${billingAnnual ? 'translate-x-6 bg-black' : 'bg-white'}`} />
+            </button>
+            <span className={`text-sm ${billingAnnual ? 'text-white' : 'text-white/40'}`}>
+              Annual <span className="text-green-400 text-xs">Save 26%</span>
+            </span>
+          </div>
+
+          {/* Email input for checkout */}
+          {!joined && !didPay && (
+            <div className="max-w-sm mx-auto flex flex-col gap-3 mb-10">
+              <Input
+                type="text"
+                placeholder="Your name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-white/20"
+              />
+              <Input
+                type="email"
+                placeholder="Your email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-white/20"
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
+          {PRICING.map((plan) => (
+            <div
+              key={plan.name}
+              className={`rounded-2xl p-8 border ${plan.highlight
+                ? 'bg-white text-black border-white'
+                : 'bg-white/5 border-white/10'}`}
+            >
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className={`font-black text-xl ${plan.highlight ? 'text-black' : 'text-white'}`}>{plan.name}</h3>
+                  {plan.highlight && <Badge className="bg-black text-white text-xs">Most Popular</Badge>}
+                </div>
+                <p className={`text-sm mb-4 ${plan.highlight ? 'text-black/60' : 'text-white/50'}`}>{plan.desc}</p>
+                <div className="flex items-baseline gap-1">
+                  <span className={`text-4xl font-black ${plan.highlight ? 'text-black' : 'text-white'}`}>
+                    ${billingAnnual ? plan.annual : plan.price}
+                  </span>
+                  <span className={`text-sm ${plan.highlight ? 'text-black/50' : 'text-white/40'}`}>/mo</span>
+                </div>
+                {billingAnnual && (
+                  <p className={`text-xs mt-1 ${plan.highlight ? 'text-black/50' : 'text-white/30'}`}>
+                    billed annually
+                  </p>
+                )}
+              </div>
+
+              <ul className="space-y-2 mb-8">
+                {plan.features.map((f) => (
+                  <li key={f} className={`flex items-center gap-2 text-sm ${plan.highlight ? 'text-black/80' : 'text-white/60'}`}>
+                    <CheckCircle2 className={`w-4 h-4 flex-shrink-0 ${plan.highlight ? 'text-black' : 'text-white/40'}`} />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+
+              {(joined || didPay) ? (
+                <div className={`text-center text-sm font-medium ${plan.highlight ? 'text-black/60' : 'text-white/40'}`}>
+                  {didPay ? "You're in!" : "You're on the waitlist"}
+                </div>
+              ) : (
+                <Button
+                  onClick={() => handleCheckout(plan.name.toLowerCase())}
+                  disabled={checkoutLoading || !email}
+                  className={`w-full font-bold h-11 ${plan.highlight
+                    ? 'bg-black text-white hover:bg-black/80'
+                    : 'bg-white text-black hover:bg-white/90'}`}
+                >
+                  {checkoutLoading ? 'Redirecting...' : plan.cta}
+                </Button>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Free waitlist option */}
+        {!joined && !didPay && (
+          <div className="text-center mt-8">
+            <button
+              onClick={handleSubmit as any}
+              disabled={loading || !email}
+              className="text-sm text-white/40 hover:text-white/70 transition-colors"
+            >
+              {loading ? 'Joining...' : 'Not ready to pay? Join the free waitlist →'}
+            </button>
+          </div>
+        )}
+
+        {(joined || didPay) && (
+          <div className="max-w-md mx-auto mt-8 bg-white/5 border border-white/20 rounded-2xl p-8 text-center">
+            <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-4" />
+            <h3 className="text-xl font-bold mb-2">
+              {didPay ? "You're in. Welcome to early access." : "You're on the list."}
+            </h3>
+            <p className="text-white/50 text-sm">
+              {didPay
+                ? "Check your email for next steps. We'll get you set up ASAP."
+                : "We'll reach out when early access opens. Expect something good."}
+            </p>
+          </div>
+        )}
+      </section>
+
       {/* Bottom CTA */}
       <section className="max-w-2xl mx-auto px-6 py-20 border-t border-white/10 text-center">
         <h2 className="text-3xl font-black mb-4">Stop drowning in digital clutter.</h2>
         <p className="text-white/50 mb-8">DAD handles it. You focus on the work that matters.</p>
-        <a href="#waitlist">
+        <a href="#pricing">
           <Button size="lg" className="bg-white text-black hover:bg-white/90 font-bold h-12 px-8">
-            Get Early Access <ArrowRight className="w-4 h-4 ml-2" />
+            Start Free for 14 Days <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </a>
+        <p className="text-white/30 text-sm mt-3">No credit card. Cancel anytime. Early members lock in pricing for life.</p>
       </section>
 
       {/* Footer */}

@@ -1,40 +1,53 @@
 {
   "mcpServers": {
     "supabase": {
-      "command": "npx",
+      "command": "cmd",
       "args": [
+        "/c",
+        "npx",
         "-y",
         "@supabase/mcp-server-supabase@latest",
         "--access-token",
         "${SUPABASE_ACCESS_TOKEN}",
         "--project-ref",
         "ocscxqaythiuidkwjuvg"
-      ]
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "${SUPABASE_ACCESS_TOKEN}"
+      }
     },
     "gmail": {
-      "command": "npx",
+      "command": "cmd",
       "args": [
+        "/c",
+        "npx",
         "-y",
         "gmail-mcp@latest"
       ]
     },
     "google-calendar": {
-      "command": "npx",
+      "command": "cmd",
       "args": [
+        "/c",
+        "npx",
         "-y",
         "google-calendar-mcp@latest"
       ]
     },
     "google-drive": {
-      "command": "npx",
+      "command": "cmd",
       "args": [
+        "/c",
+        "npx",
         "-y",
         "google-drive-mcp@latest"
       ]
     },
     "meta-ads": {
-      "command": "npx",
+      "command": "cmd",
       "args": [
+        "/c",
+        "npx",
         "-y",
         "meta-ads-mcp@latest"
       ]
