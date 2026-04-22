@@ -63,7 +63,13 @@ export default function DADClient() {
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
+  const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [joined, setJoined] = useState(false)
+
+  const searchParams = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search)
+    : null
+  const didPay = searchParams?.get('success') === 'true'
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -78,7 +84,7 @@ export default function DADClient() {
       const data = await res.json()
       if (res.ok) {
         setJoined(true)
-        toast.success(data.message === "You're already on the list!" ? data.message : 'You\'re on the list!')
+        toast.success(data.message === "You're already on the list!" ? data.message : "You're on the list!")
       } else {
         toast.error(data.error || 'Something went wrong')
       }
@@ -86,6 +92,38 @@ export default function DADClient() {
       toast.error('Something went wrong — try again')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleCheckout() {
+    if (!email) {
+      toast.error('Enter your email first')
+      return
+    }
+    setCheckoutLoading(true)
+    try {
+      const res = await fetch('/api/dad-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      const data = await res.json()
+      if (data.url) {
+        // Also save to waitlist
+        fetch('/api/dad-waitlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, name }),
+        }).catch(() => {})
+        window.location.href = data.url
+      } else {
+        toast.error('Payment not available yet — joined waitlist instead')
+        setJoined(true)
+      }
+    } catch {
+      toast.error('Something went wrong — try again')
+    } finally {
+      setCheckoutLoading(false)
     }
   }
 
@@ -129,14 +167,20 @@ export default function DADClient() {
 
         {/* CTA */}
         <div id="waitlist" className="max-w-md mx-auto">
-          {joined ? (
+          {(joined || didPay) ? (
             <div className="bg-white/5 border border-white/20 rounded-2xl p-8 text-center">
               <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">You're on the list.</h3>
-              <p className="text-white/50 text-sm">We'll reach out when early access opens. Expect something good.</p>
+              <h3 className="text-xl font-bold mb-2">
+                {didPay ? "You're in. Welcome to early access." : "You're on the list."}
+              </h3>
+              <p className="text-white/50 text-sm">
+                {didPay
+                  ? "Check your email for next steps. We'll get you set up ASAP."
+                  : "We'll reach out when early access opens. Expect something good."}
+              </p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="bg-white/5 border border-white/10 rounded-2xl p-6 text-left space-y-3">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-left space-y-3">
               <p className="text-sm text-white/50 font-medium uppercase tracking-widest mb-4">Get Early Access</p>
               <Input
                 type="text"
@@ -150,20 +194,32 @@ export default function DADClient() {
                 placeholder="Your email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
                 className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-white/20"
               />
+              {/* Paid tier */}
               <Button
-                type="submit"
-                disabled={loading || !email}
+                type="button"
+                onClick={handleCheckout}
+                disabled={checkoutLoading || !email}
                 className="w-full bg-white text-black hover:bg-white/90 font-bold h-11"
               >
-                {loading ? 'Joining...' : (
-                  <span className="flex items-center gap-2">Join Waitlist <ArrowRight className="w-4 h-4" /></span>
+                {checkoutLoading ? 'Redirecting...' : (
+                  <span className="flex items-center gap-2">
+                    Start Early Access — $19/mo <ArrowRight className="w-4 h-4" />
+                  </span>
                 )}
               </Button>
-              <p className="text-xs text-white/30 text-center">No spam. Early access only. Unsubscribe anytime.</p>
-            </form>
+              {/* Free waitlist */}
+              <button
+                type="button"
+                onClick={handleSubmit as any}
+                disabled={loading || !email}
+                className="w-full text-sm text-white/40 hover:text-white/70 transition-colors py-1"
+              >
+                {loading ? 'Joining...' : 'Or join free waitlist →'}
+              </button>
+              <p className="text-xs text-white/30 text-center">Cancel anytime. No contracts.</p>
+            </div>
           )}
         </div>
       </section>
