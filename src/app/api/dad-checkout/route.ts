@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
   // Save to waitlist before redirecting to PayPal
   if (email) {
     const supabase = await createServiceClient()
-    await supabase.from('dad_waitlist').upsert(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('dad_waitlist').upsert(
       { email, name, paid: false },
       { onConflict: 'email' }
     ).catch(() => {})

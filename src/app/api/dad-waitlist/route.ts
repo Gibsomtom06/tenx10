@@ -12,7 +12,8 @@ export async function POST(request: NextRequest) {
   }
 
   const supabase = await createServiceClient()
-  const { error } = await supabase.from('dad_waitlist').insert({ email, name, use_case })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).from('dad_waitlist').insert({ email, name, use_case })
 
   const alreadyExists = error?.code === '23505'
   if (error && !alreadyExists) {

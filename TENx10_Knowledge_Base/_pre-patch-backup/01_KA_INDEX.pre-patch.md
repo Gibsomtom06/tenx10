@@ -1,6 +1,6 @@
-# DSR PLATFORM — AI AGENT KNOWLEDGE ARCHITECTURE v2.1
+# DSR PLATFORM — AI AGENT KNOWLEDGE ARCHITECTURE v2.0
 # MASTER INDEX
-# Updated: April 2026 (v2.1 — PS Automation Patch + WHOiSEE Profile)
+# Generated: March 2, 2026
 
 ---
 
@@ -13,7 +13,6 @@
 | KA_v2_Part3_DSP_Content_Voice.md | DSP Algorithmic Playbook, Touring Phases, Content & Asset Engine, Voice Profile System | 8, 9, 10, 11 |
 | KA_v2_Part4_Releases_Alerts_Integrations.md | Release Cadence, A&R Demo Intake, Multi-Artist Logic, Alerts, Dashboard KPIs, Integration Specs | 12, 13, 14, 15, 16, 17 |
 | KA_v2_Part5_Templates_Networks_Rules.md | Template Library, Industry Networks & Contacts, AI Agent Behavior Rules | 18, 19, 20 |
-| KA_v2_Patch_PSIntegration.md | **PATCH v2.1** — Spotify PS API pipeline, 11 PS alert triggers, Daily DSP Interpretation Protocol, Artist-tier PS visibility | Patches 3, 15, 17, 20 |
 
 ---
 
@@ -23,7 +22,7 @@
 |---|---|---|---|
 | 1 | System Architecture & Data Flow | Part 1 | How user questions flow through the system to AI response |
 | 2 | User Identity Model | Part 1 | Context object shapes per tier (artist/manager/label) |
-| 3 | Permission & Access Logic | Part 1 + **PS Patch** | Who sees what — enforced at DB and AI level. PS patch adds artist-tier visibility rules. |
+| 3 | Permission & Access Logic | Part 1 | Who sees what — enforced at DB and AI level |
 | 4 | Onboarding → Bible Pipeline | Part 1 | How onboarding answers become the auto-generated Operating Bible |
 | 5 | Show Lifecycle State Machine | Part 2 | Every state a show passes through from offer to close |
 | 6 | Booking Decision Engine | Part 2 | Accept/counter/decline logic with 6-step decision tree |
@@ -35,46 +34,60 @@
 | 12 | Release Cadence & Decay Prevention | Part 4 | The 6-week rule, waterfall strategy, editorial pitch checklist |
 | 13 | A&R Demo Intake (Configurable) | Part 4 | Submission scoring, voting system, label-configurable rules |
 | 14 | Multi-Artist Context Switching | Part 4 | How AI handles manager/label rosters with multiple artists |
-| 15 | Alert & Notification System | Part 4 + **PS Patch** | Trigger conditions, priority levels, delivery channels. PS patch adds 11 PS-specific alert triggers. |
+| 15 | Alert & Notification System | Part 4 | Trigger conditions, priority levels, delivery channels |
 | 16 | Dashboard KPIs by Tier | Part 4 | What each tier sees on their home dashboard |
-| 17 | Integration & OAuth Specs | Part 4 + **PS Patch** | What data is pulled from which service, refresh rates. PS patch adds Spotify PS API cron pipeline. |
+| 17 | Integration & OAuth Specs | Part 4 | What data is pulled from which service, refresh rates |
 | 18 | Template Library | Part 5 | Promoter emails, social captions, all with variables |
 | 19 | Industry Networks & Contacts | Part 5 | Festivals, promoter networks, support artists, rider specs |
-| 20 | AI Agent Behavior Rules | Part 5 + **PS Patch** | Persona, tone, guardrails, escalation, context window management. PS patch adds 5-step Daily DSP Interpretation Protocol. |
+| 20 | AI Agent Behavior Rules | Part 5 | Persona, tone, guardrails, escalation, context window management |
 
 ---
 
-## ARTIST PROFILES
+## CHANGELOG: v1.0 → v2.0
 
-| File | Artist | Status |
-|---|---|---|
-| 07_Artist_Bible.md | DirtySnatcha (Lee Bray) | ✅ Complete — primary test case |
-| 26_WHOiSEE_Profile.md | WHOiSEE (Brett Hopkin) | ✅ New — DSP intelligence + voice profile + 14-day playbook |
-| Dark Matter | Dark Matter (Chicago/Knoxville) | ❌ Pending |
-| OZZTIN | OZZTIN | ❌ Pending |
-| MAVIC | MAVIC | ❌ Pending |
-| PRIYANX | PRIYANX | ❌ Pending |
+### New Modules (Not in v1)
+- **Module 2: User Identity Model** — Context objects per tier with full JSON schemas
+- **Module 3: Permission & Access Logic** — Full permission matrix + AI enforcement rules
+- **Module 5: Show Lifecycle State Machine** — Complete state flow from offer to close (v1 jumped from offer to phase system)
+- **Module 7: Financial Engine** — Commission calc, payment tracking, settlement sheets, CPT, tour P&L
+- **Module 11: Voice Profile System** — Per-artist voice profiles with JSON schema + generation rules
+- **Module 14: Multi-Artist Context Switching** — Roster management, priority scoring, cross-artist briefings
+- **Module 15: Alert & Notification System** — All trigger conditions consolidated with priority levels
+- **Module 16: Dashboard KPIs by Tier** — What each tier sees on their home screen
+- **Module 17: Integration & OAuth Specs** — Data pull specs, refresh rates, OAuth flow
+- **Module 19: Industry Networks & Contacts** — Festival tracker, promoter directory, support pool, rider/hospitality
 
----
+### Expanded Modules (Were in v1 but incomplete)
+- **Module 4: Onboarding** — Added Bible auto-generation pipeline (onboarding answers → structured output)
+- **Module 6: Booking Engine** — Added Step 6 (marketing budget check), promoter grading inputs, venue grading as separate system
+- **Module 8: DSP Playbook** — Added VMG Smart Audience ads, algorithmic test group sizes, Popularity Index targets
+- **Module 10: Content Engine** — Added full asset management system (upload, link, tag), video script templates, Shazam Spike ad scripts, content-to-approval pipeline
+- **Module 13: A&R** — Added reach/quality/fit scoring scales with explicit criteria
+- **Module 18: Templates** — Added back-to-back show template, deposit overdue, settlement, venue confirmation missing
+- **Module 20: Agent Rules** — Added escalation protocol, context window token budget, module selection priority
 
-## CHANGELOG: v2.0 → v2.1
+### Corrections
+- Fixed artist name: "Lee Silva" removed. Correct names: Lee Bray, Leigh Bray, or DirtySnatcha. No other aliases.
+- White-labeled all templates with {variable} syntax instead of hardcoded DSR references
+- Clarified 2/3 voting is DSR-ONLY, not a universal platform feature (was already noted in v1 but reinforced)
 
-### New Files Added
-- **KA_v2_Patch_PSIntegration.md** — Spotify PS API automation patch across Modules 3, 15, 17, 20. Supersedes all manual Musicstax workflows.
-- **26_WHOiSEE_Profile.md** — WHOiSEE artist profile: DSP snapshot, Popularity Score playbook, voice profile, 4-week content strategy, onboarding checklist.
-
-### Module Patches (v2.1)
-- **Module 17** — Spotify PS data pipeline: daily cron, `dsp_metrics` schema additions, baseline capture rule on catalog ingestion.
-- **Module 15** — 11 new PS alert triggers: threshold approach (Release Radar, Discover Weekly), threshold crossed, decay signals, Artist PS decay/growth, baseline missing, momentum window.
-- **Module 20** — 5-step Daily DSP Interpretation Protocol. AI converts raw PS data to plain-English briefing with dollar amounts and deadlines. Raw numbers never shown without context.
-- **Module 3** — Artist-tier PS visibility: own Artist PS + Track PS visible with interpreted language. Comparative roster data, competitor benchmarks, and financial impact hidden from artist tier.
-
-### Skills Installed
-- **edm-booking-agent** — Installed to Claude skills directory. Booking Agent persona for bass music touring: routing, festival pitching, deal structure, radius clauses, data leverage strategy. Activates on booking, touring, guarantee, festival pitch queries.
+### Data From Original Documents Now Incorporated
+- Technical rider details (exact equipment specs, hospitality items, Queen of England clause)
+- Festival submission tracker framework
+- Promoter network directory (by region)
+- Collaboration/support artist pool with tier assignments
+- Google Drive folder structure and naming conventions
+- Commission structure (10/10/80) with agent tracking
+- Contract types (Flat, VS, Bonus) with calculation logic
+- AI Content Engine automation system reference
+- VMG Smart Audience ad types (Fan Engagement vs Stream Growth)
+- Market intelligence framework (city-by-city intel feeds back into system)
 
 ---
 
 ## DSR REFERENCE DATA (Pre-Loaded for Test Case)
+
+This platform is being built with DirtySnatcha Records as the first test case. The following DSR-specific data should be pre-loaded into the Tier 3 label account:
 
 ### Label Identity
 - **Label:** DirtySnatcha Records
@@ -122,4 +135,4 @@
 
 ---
 
-*Master Index — Knowledge Architecture v2.1 | April 2026*
+*Master Index — Knowledge Architecture v2.0*
