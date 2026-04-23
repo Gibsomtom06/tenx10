@@ -457,7 +457,7 @@ export async function runIngest(input: IngestInput): Promise<IngestOutput> {
     {
       role: 'user' as const,
       content: message === '__init__'
-        ? "Begin Phase 1. Introduce the management team, explain the ingest process, and ask for the artist name."
+        ? "Introduce yourself as Xai, an artist manager. Ask for their artist name or handle, or a link to their profile — anything that helps identify who they are. 2-3 sentences max, direct, no hype."
         : message === '__brief__'
         ? "Generate the full Phase 1 Intelligence Brief now. Cover all sections: artist overview, platform & metrics, touring summary, revenue snapshot (current by pillar + monthly goal + gap + top 3 immediate unlocks), and immediate action items. Be specific to this artist's data."
         : (message || 'Begin Phase 1 introduction.'),
