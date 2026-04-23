@@ -145,9 +145,7 @@ export async function POST() {
         offer_amount: parsed.guarantee ?? null,
         deal_points: dealPoints,
         source_email_id: id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
+      } as any)
       .select('id')
       .single()
 
