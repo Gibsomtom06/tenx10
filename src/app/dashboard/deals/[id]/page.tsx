@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeft, Facebook, Share2, Ticket, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Globe, Share2, Ticket, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -60,7 +60,7 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
                 ? 'bg-blue-500/10 text-blue-600 border-blue-500/30'
                 : 'bg-muted text-muted-foreground border-transparent'
             }`}>
-              <Facebook className="h-2.5 w-2.5" />
+              <Globe className="h-2.5 w-2.5" />
               {deal.fb_event_posted ? (
                 deal.fb_event_link
                   ? <a href={deal.fb_event_link} target="_blank" rel="noopener noreferrer" className="hover:underline">FB event live</a>

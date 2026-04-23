@@ -9,7 +9,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { ExternalLink, Ticket, Zap, CheckCircle2, Copy, ChevronDown, ChevronUp, Megaphone, Facebook, Share2 } from 'lucide-react'
+import { ExternalLink, Ticket, Zap, CheckCircle2, Copy, ChevronDown, ChevronUp, Megaphone, Globe, Share2 } from 'lucide-react'
 import type { ConfirmWorkflowResult } from '@/app/api/deals/confirm-workflow/route'
 import type { MetaAdsBrief } from '@/app/api/meta-ads/campaign-brief/route'
 
@@ -446,7 +446,7 @@ export default function DealActions({
           {/* FB Event */}
           <div className="space-y-2">
             <div className="flex items-center gap-3">
-              <Facebook className="h-4 w-4 text-blue-500 shrink-0" />
+              <Globe className="h-4 w-4 text-blue-500 shrink-0" />
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <input
                   type="checkbox"
