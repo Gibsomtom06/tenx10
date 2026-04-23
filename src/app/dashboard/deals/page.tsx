@@ -23,7 +23,7 @@ export default async function DealsPage({
     .eq('artist_id', access?.artistId ?? '')
     .order('show_date', { ascending: true })
 
-  if (filterStatus) query = query.eq('status', filterStatus)
+  if (filterStatus) query = query.eq('status', filterStatus as any)
 
   const { data: raw } = await query
   const deals = (raw ?? []) as any[]
