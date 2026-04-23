@@ -9,7 +9,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { ExternalLink, Ticket, Zap, CheckCircle2, Copy, ChevronDown, ChevronUp, Megaphone } from 'lucide-react'
+import { ExternalLink, Ticket, Zap, CheckCircle2, Copy, ChevronDown, ChevronUp, Megaphone, Facebook, Share2 } from 'lucide-react'
 import type { ConfirmWorkflowResult } from '@/app/api/deals/confirm-workflow/route'
 import type { MetaAdsBrief } from '@/app/api/meta-ads/campaign-brief/route'
 
@@ -20,11 +20,13 @@ export default function DealActions({
   currentStatus,
   gmailDraftId,
   initialTickets,
+  initialSocial,
 }: {
   dealId: string
   currentStatus: string
   gmailDraftId: string | null
-  initialTickets?: { sold?: number | null; price?: number | null; link?: string | null }
+  initialTickets?: { sold?: number | null; price?: number | null; link?: string | null; capacity?: number | null }
+  initialSocial?: { fbEventPosted?: boolean; fbEventLink?: string | null; promoterPosting?: boolean; promoterPostLink?: string | null }
 }) {
   const router = useRouter()
   const supabase = createClient()
@@ -35,7 +37,15 @@ export default function DealActions({
   const [ticketsSold, setTicketsSold] = useState(String(initialTickets?.sold ?? ''))
   const [ticketPrice, setTicketPrice] = useState(String(initialTickets?.price ?? ''))
   const [ticketLink, setTicketLink] = useState(initialTickets?.link ?? '')
+  const [ticketCapacity, setTicketCapacity] = useState(String(initialTickets?.capacity ?? ''))
   const [savingTickets, setSavingTickets] = useState(false)
+  // Social tracking
+  const [showSocial, setShowSocial] = useState(false)
+  const [fbEventPosted, setFbEventPosted] = useState(initialSocial?.fbEventPosted ?? false)
+  const [fbEventLink, setFbEventLink] = useState(initialSocial?.fbEventLink ?? '')
+  const [promoterPosting, setPromoterPosting] = useState(initialSocial?.promoterPosting ?? false)
+  const [promoterPostLink, setPromoterPostLink] = useState(initialSocial?.promoterPostLink ?? '')
+  const [savingSocial, setSavingSocial] = useState(false)
   const [workflowLoading, setWorkflowLoading] = useState(false)
   const [workflow, setWorkflow] = useState<ConfirmWorkflowResult | null>(null)
   const [workflowOpen, setWorkflowOpen] = useState(false)
@@ -119,10 +129,24 @@ export default function DealActions({
       tickets_sold: ticketsSold ? parseInt(ticketsSold) : null,
       ticket_price: ticketPrice ? parseFloat(ticketPrice) : null,
       ticket_link: ticketLink || null,
+      ticket_capacity: ticketCapacity ? parseInt(ticketCapacity) : null,
     } as any).eq('id', dealId)
     setSavingTickets(false)
     if (error) toast.error('Failed to save ticket data')
     else { toast.success('Ticket data saved'); setShowTickets(false); router.refresh() }
+  }
+
+  async function saveSocial() {
+    setSavingSocial(true)
+    const { error } = await supabase.from('deals').update({
+      fb_event_posted: fbEventPosted,
+      fb_event_link: fbEventLink || null,
+      promoter_posting: promoterPosting,
+      promoter_post_link: promoterPostLink || null,
+    } as any).eq('id', dealId)
+    setSavingSocial(false)
+    if (error) toast.error('Failed to save social data')
+    else { toast.success('Social tracking saved'); setShowSocial(false); router.refresh() }
   }
 
   return (
@@ -149,6 +173,12 @@ export default function DealActions({
         <Button variant="outline" size="sm" onClick={() => setShowTickets(!showTickets)}>
           <Ticket className="h-3 w-3 mr-1" />
           Ticket Sales
+        </Button>
+
+        <Button variant="outline" size="sm" onClick={() => setShowSocial(!showSocial)}
+          className={promoterPosting || fbEventPosted ? 'border-green-500/50 text-green-600' : ''}>
+          <Share2 className="h-3 w-3 mr-1" />
+          {promoterPosting || fbEventPosted ? 'Social Active' : 'Social Tracking'}
         </Button>
 
         {(status === 'confirmed' || status === 'completed') && (
@@ -369,41 +399,117 @@ export default function DealActions({
       {showTickets && (
         <div className="bg-muted/30 rounded-lg p-4 space-y-3">
           <p className="text-sm font-medium">Ticket Sales</p>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">Tickets Sold</label>
-              <Input
-                type="number"
-                placeholder="350"
-                value={ticketsSold}
-                onChange={e => setTicketsSold(e.target.value)}
-              />
+              <Input type="number" placeholder="350" value={ticketsSold} onChange={e => setTicketsSold(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Capacity</label>
+              <Input type="number" placeholder="500" value={ticketCapacity} onChange={e => setTicketCapacity(e.target.value)} />
             </div>
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">Ticket Price ($)</label>
-              <Input
-                type="number"
-                placeholder="20"
-                value={ticketPrice}
-                onChange={e => setTicketPrice(e.target.value)}
-              />
+              <Input type="number" placeholder="20" value={ticketPrice} onChange={e => setTicketPrice(e.target.value)} />
             </div>
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">Ticket Link</label>
-              <Input
-                placeholder="https://..."
-                value={ticketLink}
-                onChange={e => setTicketLink(e.target.value)}
-              />
+              <Input placeholder="https://..." value={ticketLink} onChange={e => setTicketLink(e.target.value)} />
             </div>
           </div>
-          {ticketsSold && ticketPrice && (
-            <p className="text-xs text-muted-foreground">
-              Gross ticket revenue: ${(parseInt(ticketsSold) * parseFloat(ticketPrice)).toLocaleString()}
-            </p>
-          )}
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            {ticketsSold && ticketPrice && (
+              <span>Gross: <strong className="text-foreground">${(parseInt(ticketsSold) * parseFloat(ticketPrice)).toLocaleString()}</strong></span>
+            )}
+            {ticketsSold && ticketCapacity && (
+              <span>Sell-through: <strong className={
+                parseInt(ticketsSold) / parseInt(ticketCapacity) >= 0.8 ? 'text-green-600' :
+                parseInt(ticketsSold) / parseInt(ticketCapacity) >= 0.5 ? 'text-yellow-600' : 'text-red-500'
+              }>{Math.round(parseInt(ticketsSold) / parseInt(ticketCapacity) * 100)}%</strong></span>
+            )}
+            {ticketLink && (
+              <a href={ticketLink} target="_blank" rel="noopener noreferrer" className="text-primary flex items-center gap-1 hover:underline">
+                <ExternalLink className="h-3 w-3" /> View tickets
+              </a>
+            )}
+          </div>
           <Button size="sm" onClick={saveTickets} disabled={savingTickets}>
             {savingTickets ? 'Saving...' : 'Save'}
+          </Button>
+        </div>
+      )}
+
+      {showSocial && (
+        <div className="bg-muted/30 rounded-lg p-4 space-y-4">
+          <p className="text-sm font-medium">Social &amp; Promoter Activity</p>
+
+          {/* FB Event */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <Facebook className="h-4 w-4 text-blue-500 shrink-0" />
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={fbEventPosted}
+                  onChange={e => setFbEventPosted(e.target.checked)}
+                  className="h-3 w-3 accent-blue-500"
+                />
+                <span className={fbEventPosted ? 'text-blue-600 font-medium' : 'text-muted-foreground'}>
+                  {fbEventPosted ? 'FB event is live' : 'FB event not posted yet'}
+                </span>
+              </label>
+              {fbEventLink && (
+                <a href={fbEventLink} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary flex items-center gap-1 hover:underline ml-auto">
+                  <ExternalLink className="h-3 w-3" /> Open event
+                </a>
+              )}
+            </div>
+            <Input
+              placeholder="Facebook event URL (https://facebook.com/events/...)"
+              value={fbEventLink}
+              onChange={e => setFbEventLink(e.target.value)}
+              className="text-sm"
+            />
+          </div>
+
+          {/* Promoter posting */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <Share2 className="h-4 w-4 text-purple-500 shrink-0" />
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={promoterPosting}
+                  onChange={e => setPromoterPosting(e.target.checked)}
+                  className="h-3 w-3 accent-purple-500"
+                />
+                <span className={promoterPosting ? 'text-purple-600 font-medium' : 'text-muted-foreground'}>
+                  {promoterPosting ? 'Promoter is actively posting / advertising' : 'Promoter posting not confirmed'}
+                </span>
+              </label>
+              {promoterPostLink && (
+                <a href={promoterPostLink} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary flex items-center gap-1 hover:underline ml-auto">
+                  <ExternalLink className="h-3 w-3" /> Latest post
+                </a>
+              )}
+            </div>
+            <Input
+              placeholder="Link to promoter's most recent post/story about the show"
+              value={promoterPostLink}
+              onChange={e => setPromoterPostLink(e.target.value)}
+              className="text-sm"
+            />
+            <p className="text-[10px] text-muted-foreground">
+              Search: <a href={`https://www.facebook.com/search/events`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">FB Events</a>
+              {' · '}
+              <a href={`https://www.instagram.com/explore/`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Instagram</a>
+              {' · '}
+              <a href={`https://twitter.com/search`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">X/Twitter</a>
+            </p>
+          </div>
+
+          <Button size="sm" onClick={saveSocial} disabled={savingSocial}>
+            {savingSocial ? 'Saving...' : 'Save Social Tracking'}
           </Button>
         </div>
       )}

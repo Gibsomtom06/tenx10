@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Facebook, Share2, Ticket, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -40,6 +40,46 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
         <div className="flex-1">
           <h1 className="text-2xl font-bold">{deal.title}</h1>
           <p className="text-sm text-muted-foreground">{deal.show_date ?? 'No date set'}</p>
+          {/* Social + ticket signals */}
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            {deal.tickets_sold != null && (
+              <span className="flex items-center gap-1 text-[10px] bg-muted px-2 py-0.5 rounded-full">
+                <Ticket className="h-2.5 w-2.5" />
+                {deal.tickets_sold.toLocaleString()} sold
+                {deal.ticket_capacity ? ` / ${deal.ticket_capacity.toLocaleString()} cap (${Math.round(deal.tickets_sold / deal.ticket_capacity * 100)}%)` : ''}
+              </span>
+            )}
+            {deal.ticket_link && (
+              <a href={deal.ticket_link} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1 text-[10px] text-primary hover:underline">
+                <ExternalLink className="h-2.5 w-2.5" /> Ticket link
+              </a>
+            )}
+            <span className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border ${
+              deal.fb_event_posted
+                ? 'bg-blue-500/10 text-blue-600 border-blue-500/30'
+                : 'bg-muted text-muted-foreground border-transparent'
+            }`}>
+              <Facebook className="h-2.5 w-2.5" />
+              {deal.fb_event_posted ? (
+                deal.fb_event_link
+                  ? <a href={deal.fb_event_link} target="_blank" rel="noopener noreferrer" className="hover:underline">FB event live</a>
+                  : 'FB event live'
+              ) : 'No FB event'}
+            </span>
+            <span className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border ${
+              deal.promoter_posting
+                ? 'bg-purple-500/10 text-purple-600 border-purple-500/30'
+                : 'bg-muted text-muted-foreground border-transparent'
+            }`}>
+              <Share2 className="h-2.5 w-2.5" />
+              {deal.promoter_posting ? (
+                deal.promoter_post_link
+                  ? <a href={deal.promoter_post_link} target="_blank" rel="noopener noreferrer" className="hover:underline">Promoter posting</a>
+                  : 'Promoter posting'
+              ) : 'Promoter not tracked'}
+            </span>
+          </div>
         </div>
         <Badge variant={STATUS_COLOR[deal.status] as any}>{deal.status}</Badge>
       </div>
@@ -151,7 +191,8 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
         dealId={deal.id}
         currentStatus={deal.status}
         gmailDraftId={deal.gmail_draft_id}
-        initialTickets={{ sold: deal.tickets_sold, price: deal.ticket_price, link: deal.ticket_link }}
+        initialTickets={{ sold: deal.tickets_sold, price: deal.ticket_price, link: deal.ticket_link, capacity: deal.ticket_capacity }}
+        initialSocial={{ fbEventPosted: deal.fb_event_posted, fbEventLink: deal.fb_event_link, promoterPosting: deal.promoter_posting, promoterPostLink: deal.promoter_post_link }}
       />
     </div>
   )
