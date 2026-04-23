@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getArtistAccess } from '@/lib/supabase/artist-access'
 import { redirect } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { TrendingUp, Users, Music2, MapPin, Instagram, Radio, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { TrendingUp, Users, Music2, MapPin, Share2, Radio, AlertCircle, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
 import DspToolbox from './DspToolbox'
 
