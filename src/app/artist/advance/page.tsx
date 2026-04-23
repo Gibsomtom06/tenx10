@@ -26,13 +26,14 @@ export default async function ArtistAdvanceIndexPage() {
     .select('artist_id, role, artists(id, name, stage_name)')
     .eq('user_id', user.id)
 
-  const artistIds = (memberships ?? []).map(m => m.artist_id).filter(Boolean)
+  const membershipsArr = (memberships ?? []) as any[]
+  const artistIds = membershipsArr.map((m: any) => m.artist_id).filter(Boolean)
   if (!artistIds.length) redirect('/dashboard')
 
   // Build a label map: artist_id → display name
   const artistLabel: Record<string, string> = {}
-  for (const m of memberships ?? []) {
-    const a = (m as any).artists as { id: string; name: string; stage_name: string | null } | null
+  for (const m of membershipsArr) {
+    const a = m.artists as { id: string; name: string; stage_name: string | null } | null
     if (a) artistLabel[m.artist_id] = a.stage_name ?? a.name
   }
 

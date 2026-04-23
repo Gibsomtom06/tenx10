@@ -27,7 +27,7 @@ export default async function ArtistAdvancePage({ params }: { params: Promise<{ 
     .from('artist_members')
     .select('artist_id')
     .eq('user_id', user.id)
-  const managedArtistIds = (memberships ?? []).map(m => m.artist_id)
+  const managedArtistIds = ((memberships ?? []) as any[]).map((m: any) => m.artist_id)
   if (!managedArtistIds.length) redirect('/dashboard')
 
   const { data: rawDeal } = await supabase
