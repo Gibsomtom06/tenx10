@@ -4,7 +4,8 @@ import { redirect } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import Link from 'next/link'
-import { MapPin, Calendar, DollarSign, ChevronRight, GitBranch } from 'lucide-react'
+import { MapPin, Calendar, DollarSign, ChevronRight, GitBranch, Hotel, Car, UtensilsCrossed } from 'lucide-react'
+import { detectHGR } from '@/lib/offer/detect-hgr'
 
 export const metadata = { title: 'Pipeline — TENx10' }
 
@@ -25,7 +26,7 @@ export default async function PipelinePage() {
 
   const { data: deals } = await supabase
     .from('deals')
-    .select('id, title, show_date, offer_amount, status, deal_points')
+    .select('id, title, show_date, offer_amount, status, deal_points, notes')
     .eq('artist_id', access.artistId)
     .neq('status', 'cancelled')
     .order('show_date', { ascending: true })
@@ -35,10 +36,35 @@ export default async function PipelinePage() {
   const completed = (deals ?? []).filter(d => d.status === 'completed')
 
   function DealRow({ deal }: { deal: NonNullable<typeof deals>[number] }) {
-    const pts = deal.deal_points as Record<string, string> | null
+    const pts = deal.deal_points as Record<string, any> | null
     const city = pts?.city ?? deal.title
     const state = pts?.state ?? ''
     const venue = pts?.venue ?? ''
+    const notesText = [
+      (deal as any).notes,
+      pts?.notes,
+      pts?.hospitality,
+      pts?.hotel,
+      pts?.ground,
+      pts?.rider,
+      typeof pts === 'string' ? pts : null,
+    ].filter(Boolean).join('\n')
+    const hgr = detectHGR(notesText)
+    const hgrIcon = (v: boolean | null, Icon: any, label: string) => (
+      <span
+        key={label}
+        title={label + ' ' + (v === true ? 'included' : v === false ? 'NOT included' : 'not specified')}
+        className={
+          v === true
+            ? 'inline-flex text-green-600 dark:text-green-400'
+            : v === false
+            ? 'inline-flex text-red-600 dark:text-red-400'
+            : 'inline-flex text-muted-foreground/30'
+        }
+      >
+        <Icon className="h-3 w-3" />
+      </span>
+    )
     return (
       <Link href={`/artist/advance/${deal.id}`}>
         <Card className="hover:border-primary/30 transition-colors cursor-pointer group">
@@ -51,6 +77,11 @@ export default async function PipelinePage() {
                     {city}{state ? `, ${state}` : ''}
                   </span>
                   <Badge className={`text-[10px] ${STATUS_COLORS[deal.status] ?? ''}`}>{deal.status}</Badge>
+                  <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground/60 ml-1">
+                    {hgrIcon(hgr.hotel, Hotel, 'Hotel')}
+                    {hgrIcon(hgr.ground, Car, 'Ground')}
+                    {hgrIcon(hgr.rider, UtensilsCrossed, 'Rider')}
+                  </span>
                 </div>
                 {venue && <p className="text-xs text-muted-foreground mt-0.5">{venue}</p>}
                 {deal.show_date && (
