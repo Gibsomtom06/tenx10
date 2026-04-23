@@ -452,8 +452,14 @@ export async function runIngest(input: IngestInput): Promise<IngestOutput> {
 
   // Build Claude request
   const systemPrompt = buildSystemPrompt(researchData)
+  // Anthropic requires messages to start with a user role — strip any leading assistant messages
+  const trimmedHistory = history.reduce<Message[]>((acc, m) => {
+    if (acc.length === 0 && m.role === 'assistant') return acc
+    return [...acc, m]
+  }, [])
+
   const claudeMsgs: Array<{ role: 'user' | 'assistant'; content: string }> = [
-    ...history.map(m => ({ role: m.role, content: m.content })),
+    ...trimmedHistory.map(m => ({ role: m.role, content: m.content })),
     {
       role: 'user' as const,
       content: message === '__init__'

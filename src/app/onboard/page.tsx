@@ -204,6 +204,7 @@ export default function OnboardPage() {
           state: { phase: 'intro', artistData: {}, researchComplete: false },
         }),
       })
+      if (!res.ok) throw new Error(`API error ${res.status}`)
       const data = await res.json() as { reply: string; state: IngestState; sessionId?: string; history: Message[] }
       setMessages([{ role: 'assistant', content: data.reply }])
       setHistory(data.history ?? [{ role: 'assistant', content: data.reply }])
@@ -241,6 +242,7 @@ export default function OnboardPage() {
           sessionId,
         }),
       })
+      if (!res.ok) throw new Error(`API error ${res.status}`)
       const data = await res.json() as { reply: string; state: IngestState; sessionId?: string; history: Message[]; savedArtistId?: string }
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
       setHistory(data.history ?? [...history, userMsg, { role: 'assistant', content: data.reply }])
@@ -274,6 +276,7 @@ export default function OnboardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: '__brief__', history, state, sessionId }),
       })
+      if (!res.ok) throw new Error(`API error ${res.status}`)
       const data = await res.json() as { reply: string; state: IngestState; sessionId?: string; history: Message[]; savedArtistId?: string }
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
       setHistory(data.history ?? [...history, userMsg, { role: 'assistant', content: data.reply }])
