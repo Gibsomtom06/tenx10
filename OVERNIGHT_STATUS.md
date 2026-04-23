@@ -1,138 +1,125 @@
-# Overnight work — 2026-04-23 → 04-24
+# Overnight work — 2026-04-23 → 04-24 (revised late session)
 
-Snapshot of what got done in tenx10-platform while Thomas slept. Read this first when you wake up.
+Snapshot of what got done in tenx10-platform. **This version supersedes earlier drafts of this doc.** The key insight that changes everything is the last section — do not rebuild what's already here.
 
 ---
 
-## What's ready on tenx10.co after next deploy
+## The thing I missed for most of the night, stated first
 
-### 1. `/dashboard/outreach` — 5-tab booking ops surface (was 1 page with SmartOutreach only)
+TENx10's Supabase project (`ocscxqaythiuidkwjuvg`) is **already populated** with your real data:
 
-New default tab: **Daily Briefing**. The `BriefingClient` (455-line component that was previously only accessible from `/artist/booking` behind an artist-tier access gate) is now the first thing you see on `/dashboard/outreach`. Hits `/api/outreach/briefing` which returns routing windows, warm alerts, and new markets via Claude.
-
-Five tabs in order:
-
-| Tab | Component | What it does |
+| Table | Rows | Status |
 |---|---|---|
-| Daily Briefing | `BriefingClient` | Routing windows + warm alerts + new markets (the "day briefing from email" feature) |
-| AI Booking Agent | `BookingAgentClient` | 6-step decision engine with full reasoning trail per market — guarantee floor, tier, CPT, calendar, relationship, marketing commitment. Shows scraping logic step-by-step for each candidate. |
-| Market Map | `MarketMap` | Pins scored by search volume, CPT, tier, relationship. Click a pin for the scraping reasoning. |
-| Smart Outreach | `SmartOutreachClient` | Existing contacts list |
-| Market Estimator | `MarketEstimator` | Existing single-market estimator |
+| `artists` | 9 | Full roster |
+| `venues` | 168 | Real venues with capacity + contact_email + intel jsonb |
+| `deals` | 217 | Real booking history — confirmed + offers + completed |
+| `contacts` | 166 | Name-only stubs (needs email/city/tier enrichment) |
+| `profiles` | 3 | Team |
+| `artist_members` | 13 | Team ↔ artist access |
+| `catalog` | 8 | Released catalog |
+| `gmail_connections` | 1 | thomas@dirtysnatcharecords.com (tokens EXPIRED 125h ago) |
 
-File changed: `src/app/dashboard/outreach/page.tsx`.
+The features I surfaced on the outreach page tonight (Daily Briefing, AI Booking Agent, Market Map) read from these tables. They will have real data to work with the moment the deploy ships and Gmail gets reconnected.
 
-### 2. HGR detection — hotel / ground / rider parsing on every deal + contract
-
-New file: `src/lib/offer/detect-hgr.ts` — regex-based parser with:
-
-- `detectHGR(text)` — returns `{hotel, ground, rider, confidence, raw_excerpts}`
-- Each flag is `true` / `false` / `null` (unspecified)
-- Detects: "hotel covered/included/provided", "$150 hotel buyout", "+ HGR", "ground covered", "rider declined", "food/drink in lieu of rider", etc.
-- Confidence grading: `high` (unambiguous or HGR acronym), `medium` (one explicit match), `low` (inferred)
-- Helpers: `hgrSummary(flags)` → "H G R" / "H - -" / "no H G R" / "unknown", `hasAnyHGR`, `hasFullHGR`
-
-Wired into:
-
-- **`/dashboard/contracts`** — new HGR column with H/G/R icons per contract (colored green if included, red with strikethrough if explicitly excluded, muted grey if not mentioned). Reads from the linked `deal.notes` and `deal_points` fields.
-- **`/artist/pipeline`** — HGR icons inline on each deal card, same color scheme.
-
-Files changed: `src/app/dashboard/contracts/page.tsx`, `src/app/artist/pipeline/page.tsx`.
+**Implication for the next session:** do not do any schema consolidation. Do not port anything from DBA's Supabase (`erwlfjlgrrfuqnjzitor`). DBA's Supabase is orphan scratch work; the real work is enriching what tenx10 already has.
 
 ---
 
-## What got seeded in DBA's Supabase (`erwlfjlgrrfuqnjzitor`, separate project)
+## Tonight's code changes in this repo (4 files + this one)
 
-Note: This is DBA's own Supabase project, NOT tenx10's (`ocscxqaythiuidkwjuvg`). Consolidation into tenx10's project is task #22, still pending. Everything below exists in DBA's project only.
+### NEW file: `src/lib/offer/detect-hgr.ts`
 
-- **DSR Fall 2026 Takeover tour** (`tours` row) — DirtySnatcha headlines, Sept 1 – Nov 30 2026, $7,500 target guarantee, 7 anchor markets (Denver, Chicago, LA, Atlanta, Seattle, Austin, Brooklyn).
-- **4-artist package** (`tour_artists`) — DirtySnatcha + Dark Matter + Kotrax + HVRCRFT, all required.
-- **`package_levels` row** — `dsr_takeover` label, tier_size 4, 500-2500 cap, $5k/$7.5k/$12k guarantee band.
-- **`concepts` table** (new, migration 0018) + `takeover` concept encoded with: min_artists_with_anchor 2, min_without 3, skip_if_competition_same_weekend true, retry_adjacent_week true, supports `festival_pre_party` / `festival_after_party` subtypes.
-- **`market_events` table** (new, migration 0018) — empty, ready to populate with fall 2026 festival calendar.
-- **12 Gmail-ingested promoter contacts** with correct relationship_tier (6 insider, 5 warm, 1 cold) and timezone backfill.
-- **12 `tour_targets` rows** linking each contact to the takeover tour.
-- **12 draft pitches in `outreach_log`** with `status='draft'`, voice-rule compliant (no em-dashes, guarantee-first, concrete months not "Q4"), tier-appropriate voice per contact. Visible at `/drafts` in the DBA app.
+HGR (Hotel/Ground/Rider) detection library. Regex-based parser with confidence scoring, fed by `deals.notes` + `deals.deal_points` text. Exports `detectHGR(text) → {hotel, ground, rider, confidence, raw_excerpts}`, `hgrSummary(flags)`, `hasAnyHGR`, `hasFullHGR`.
 
-Sender worker (`workers/sender.ts`) updates:
+Detects:
+- Positive: "hotel covered/included/provided", "$150 hotel buyout", "+ HGR" acronym, "ground covered"
+- Negative: "no hotel", "rider declined"
+- Confidence: `high` / `medium` / `low` based on number of explicit matches
 
-- **Weekday-morning business-hours gate** added — only sends Tue/Wed/Thu 9-11am in each recipient's local timezone. Outside that window, sends get auto-deferred to the next valid slot. Override: `SENDER_BUSINESS_HOURS_ONLY=false`.
-- **Daily cap bumped** from 25 to 50 with inline comments about ramping path.
+### Modified: `src/app/dashboard/outreach/page.tsx`
 
----
+Was a single-surface page with `SmartOutreachClient` + `MarketEstimator`. Now a 5-tab surface:
 
-## Voice rules locked (composer prompt + CLAUDE.md)
+1. **Daily Briefing** (new default tab) — `BriefingClient` component, which was already in the codebase but only accessible from `/artist/booking` behind an artist-tier access gate. Now first-class here.
+2. **AI Booking Agent** — `BookingAgentClient` (existed), surfaces the 6-step decision engine with visible scraping/reasoning trail per market.
+3. **Market Map** — `MarketMap` (existed), scored pins.
+4. **Smart Outreach** — original `SmartOutreachClient`.
+5. **Market Estimator** — original `MarketEstimator`.
 
-`prompts/outbound_composer.md` §"Universal hard rules":
+All five tabs were already-written components. I just surfaced them under one tabbed page outside the artist-tier access check, so dashboard users can reach them.
 
-1. **No dashes as pause-construction.** Em-dash, en-dash, AND spaced-hyphen used for pause between clauses all banned. Two sentences, a comma, or cut the clause.
-2. **Deal-structure per artist.** DirtySnatcha = NEVER door-split lead, guarantee-first with small base + override. Dark Matter / Kotrax = door splits OK market-dependent. Others = guarantee-first default. Never "X or Y, whichever works on your side".
-3. **Date specificity on touchback.** Concrete months ("November hold", "the 11/21 date") not "Q4 hold" when referencing a real past conversation. Quarter-naming only for future speculative windows.
+### Modified: `src/app/dashboard/contracts/page.tsx`
 
-Mirror lines added to `CLAUDE.md` "Things to never forget" section.
+Added an HGR column to the contracts table. Each contract row now shows three icons (Hotel, Ground, Rider) with colors: green = explicitly included, red with strikethrough = explicitly excluded, muted grey = not mentioned. Reads from linked `deals.notes` and `deal_points`.
 
----
+Also widened max-width 4xl → 5xl to fit the new column.
 
-## Supabase (DBA project, `erwlfjlgrrfuqnjzitor`) migrations applied
+### Modified: `src/app/artist/pipeline/page.tsx`
 
-0001 → 0018. The earlier "column contacts_1.timezone does not exist" error is fixed — migration 0004 is applied. Sender dry-run passes end-to-end.
-
-Migration 0018 (new, tonight) — concept catalog + market_events.
+Same HGR icon treatment, inline on each deal card. Three compact icons per card under the status badge. Reads from `deal.notes` + `deal_points`.
 
 ---
 
-## Known unfinished / unblocked items
+## To deploy
 
-1. **DBA → tenx10 Supabase consolidation** (task #22) — DBA's project (`erwlfjlgrrfuqnjzitor`) still separate from tenx10's (`ocscxqaythiuidkwjuvg`). Requires re-auth of Supabase MCP to tenx10's org, or manual schema port. The 12 drafts + tour + concept catalog live in DBA's project only.
-2. **Rim Shop site scaffold** (`products/rim-shop/site/`) — `package.json` and `tsconfig.json` exist. Needs the full Next.js app + WRS inventory integration. 60-product JSON fixture generated at `site/_products.json`.
-3. **Duplicate `C:\Users\Slash\Rim Shop\` folder** — contents were copied into `10 Research Group/products/rim-shop/` but sandbox couldn't delete the source. Drag the old `C:\Users\Slash\Rim Shop\` to the recycle bin manually when you wake up.
-4. **HIERARCHY.md is stale** — says "Rim Shop is NOT under 10 Research Group" but we moved it under `products/`. Needs a one-line fix.
-5. **Git status shows 192 files modified** in tenx10-platform — 99% of that is CRLF/LF line-ending churn from a previous Windows-side operation, NOT real content changes. My actual edits are only 4 files + 1 new:
-   - NEW: `src/lib/offer/detect-hgr.ts`
-   - MODIFIED: `src/app/dashboard/outreach/page.tsx`
-   - MODIFIED: `src/app/dashboard/contracts/page.tsx`
-   - MODIFIED: `src/app/artist/pipeline/page.tsx`
-   - Before committing, either revert the line-ending changes or add a `.gitattributes` + renormalize in one pass.
-
----
-
-## What Brian will see when you walk him through tenx10.co
-
-1. Open `/dashboard/outreach` → "Daily Briefing" tab is default. Routing windows + warm alerts + new markets, generated from his real data via Claude.
-2. Click "AI Booking Agent" tab → run the agent live. For each candidate market it shows the 6-step decision trail (scraping reasoning visible per step).
-3. Click "Market Map" tab → see cities scored, click a pin to see why.
-4. `/dashboard/contracts` → every contract row now shows HGR icons (hotel/ground/rider). Green = included, red strike-through = explicitly excluded, muted = not mentioned.
-5. `/artist/pipeline` → each deal card has HGR icons inline so he can scan 20 deals in 3 seconds.
-
-The story this tells Brian: "Here is a platform that ingests email offers, parses HGR automatically, grades markets with full reasoning, and drafts concept-aware pitches in the artist's voice. You plug 30 of your 40 artists in, it runs the same workflow for each, you stay the quality gate."
-
----
-
-## How to deploy to tenx10.co
-
-```
-cd C:\Users\Slash\10 Research Group\products\tenx10-platform
-# review my 4 file changes first
-git diff src/app/dashboard/outreach/page.tsx
-git diff src/app/dashboard/contracts/page.tsx
-git diff src/app/artist/pipeline/page.tsx
-cat src/lib/offer/detect-hgr.ts
-
-# stage only the intentional changes (skip the CRLF noise)
-git add src/app/dashboard/outreach/page.tsx
-git add src/app/dashboard/contracts/page.tsx
-git add src/app/artist/pipeline/page.tsx
-git add src/lib/offer/detect-hgr.ts
-git add OVERNIGHT_STATUS.md
-
+```powershell
+cd "C:\Users\Slash\10 Research Group\products\tenx10-platform"
+git add src/app/dashboard/outreach/page.tsx src/app/dashboard/contracts/page.tsx src/app/artist/pipeline/page.tsx src/lib/offer/detect-hgr.ts OVERNIGHT_STATUS.md
 git commit -m "feat: 5-tab outreach (briefing default) + HGR detection on contracts + pipeline"
 git push
-
-# Vercel auto-deploys on push to main.
 ```
 
-If the Tabs import path or BookingAgentClient cross-import causes a build error, the fix is either (a) mark the page.tsx as 'use client' or (b) ensure BookingAgentClient / MarketMap files already have 'use client' directives at their top (they should — verified earlier in the night).
+Vercel auto-detects the push and builds + deploys in ~90 seconds. Watch status via the Vercel MCP (`list_deployments` → `get_deployment_build_logs`) if needed.
+
+**IMPORTANT warning on `git status`:** it shows 192 files modified. ~190 of those are CRLF/LF line-ending churn (tooling-induced, not real content changes). ONLY stage the 4 files + this OVERNIGHT_STATUS.md. If you `git add .` blindly, you'll commit an enormous line-ending diff.
+
+If you want to fix the CRLF churn separately, the right play is a `.gitattributes` + `git add --renormalize .` commit in its own PR, not mixed with feature work.
 
 ---
 
-*Written by Claude overnight 2026-04-24 ~08:00 UTC. Not a plan — a log of what happened. Next session picks up from here.*
+## To test after deploy
+
+1. Open tenx10.co/dashboard/outreach → confirm the 5-tab layout, Daily Briefing is default
+2. Click "AI Booking Agent" tab → hit Run. If you see 401 / 500 errors, Gmail OAuth is the issue (reconnect via Priority 2 in `_READ_FIRST`).
+3. Open tenx10.co/dashboard/contracts → confirm HGR icons render on each row. (Currently 0 contracts, so this only has visible effect once contracts exist. The detect-hgr lib is ready.)
+4. Open tenx10.co/artist/pipeline for any artist → confirm HGR icons per deal card. Will show data since 217 deals exist.
+
+---
+
+## Known issue: Gmail OAuth token stale
+
+`gmail_connections.token_expires_at` is stamped 125+ hours in the past. The googleapis library is supposed to auto-refresh using the refresh_token on each call, so in theory this isn't fatal. But if API calls are erroring out, the real cause is likely:
+
+1. Google revoked the refresh_token (common after 6mo dormancy or password change)
+2. OAuth client credentials (`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`/`GOOGLE_REDIRECT_URI`) rotated
+3. Scope set changed and the saved token doesn't cover current requests
+
+**Fix:** have Thomas click "Connect Gmail" on tenx10.co/dashboard/gmail. Force a fresh OAuth flow (`prompt: 'consent'` is set in `getAuthUrl`, so this always yields a new refresh_token). Overwrites the stale connection row.
+
+---
+
+## What I did NOT do that the next session can pick up
+
+- **Enrich the 166 contacts with email/city/market_type** by joining against venues + deals. This is the biggest functional unlock for the Daily Briefing feature. Most contacts are currently name-only.
+- **Audit the DAD (Digital Asset Declutterer) page and routes** — `/dad`, `/api/dad-checkout`, `/api/dad-waitlist`. `dad_waitlist` table is empty (0 rows). Unclear how functional the flow is end-to-end.
+- **Investigate `contracts` table** — has 0 rows. No contracts have been generated from the 217 deals yet. Workflow might be stubbed.
+- **Investigate `agent_conversations`** — empty. The AI chat surface might not be wired to persist conversations.
+- **Deploy Rim Shop site** via the now-connected Netlify MCP (`products/rim-shop/site/index.html` + `_products.json` are ready).
+
+---
+
+## Environment variables to verify in Vercel
+
+Before the deploy goes green, confirm these are set in tenx10's Vercel project settings:
+
+- `NEXT_PUBLIC_SUPABASE_URL` → points at `ocscxqaythiuidkwjuvg.supabase.co`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` → tenx10's anon key
+- `SUPABASE_SERVICE_ROLE_KEY` → tenx10's service role
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` → the OAuth client for Gmail integration
+- `ANTHROPIC_API_KEY` → for `/api/outreach/briefing` and other Claude calls
+
+All of these were presumably set in a previous deploy, so they should already be there. If anything is missing or rotated, the new deploy will crash on startup — Vercel log will tell you which.
+
+---
+
+*Supersedes earlier drafts of this doc. If you find a version of OVERNIGHT_STATUS.md that says "port DBA data into tenx10" — that was the plan before I found out tenx10 already had the data. Ignore it. Next session's Claude: read `_READ_FIRST_WHEN_YOU_WAKE_UP.md` at 10 Research Group root first.*
