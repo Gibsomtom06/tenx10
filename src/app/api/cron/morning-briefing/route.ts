@@ -2,12 +2,11 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 const THOMAS_EMAIL = 'thomas@dirtysnatcharecords.com'
 const CRON_SECRET = process.env.CRON_SECRET
 
 export async function GET(req: Request) {
+  const resend = new Resend(process.env.RESEND_API_KEY)
   // Security: Vercel Cron sends this header. Block unauthorized calls.
   const authHeader = req.headers.get('authorization')
   if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
