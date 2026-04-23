@@ -48,6 +48,8 @@ export interface Database {
           avatar_url: string | null
           created_at: string
           updated_at: string
+          social_stats: Json | null
+          minimum_guarantee: number | null
         }
         Insert: {
           id?: string
@@ -65,6 +67,8 @@ export interface Database {
           status?: 'active' | 'inactive' | 'pending'
           bio?: string | null
           avatar_url?: string | null
+          social_stats?: Json | null
+          minimum_guarantee?: number | null
         }
         Update: {
           id?: string
@@ -82,6 +86,8 @@ export interface Database {
           status?: 'active' | 'inactive' | 'pending'
           bio?: string | null
           avatar_url?: string | null
+          social_stats?: Json | null
+          minimum_guarantee?: number | null
         }
         Relationships: []
       }
@@ -102,6 +108,16 @@ export interface Database {
           created_by: string
           created_at: string
           updated_at: string
+          deposit_paid: boolean | null
+          deposit_amount: number | null
+          balance_paid: boolean | null
+          balance_due_date: string | null
+          net_after_commission: number | null
+          ticket_capacity: number | null
+          fb_event_posted: boolean | null
+          fb_event_link: string | null
+          promoter_posting: boolean | null
+          promoter_post_link: string | null
         }
         Insert: {
           id?: string
@@ -116,7 +132,17 @@ export interface Database {
           source_email_id?: string | null
           gmail_draft_id?: string | null
           notes?: string | null
-          created_by: string
+          created_by?: string
+          deposit_paid?: boolean | null
+          deposit_amount?: number | null
+          balance_paid?: boolean | null
+          balance_due_date?: string | null
+          net_after_commission?: number | null
+          ticket_capacity?: number | null
+          fb_event_posted?: boolean | null
+          fb_event_link?: string | null
+          promoter_posting?: boolean | null
+          promoter_post_link?: string | null
         }
         Update: {
           id?: string
@@ -132,6 +158,17 @@ export interface Database {
           gmail_draft_id?: string | null
           notes?: string | null
           created_by?: string
+          deposit_paid?: boolean | null
+          deposit_amount?: number | null
+          balance_paid?: boolean | null
+          balance_due_date?: string | null
+          net_after_commission?: number | null
+          ticket_capacity?: number | null
+          fb_event_posted?: boolean | null
+          fb_event_link?: string | null
+          promoter_posting?: boolean | null
+          promoter_post_link?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
