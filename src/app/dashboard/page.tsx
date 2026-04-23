@@ -1,144 +1,135 @@
 import { createClient } from '@/lib/supabase/server'
+import { getArtistAccess } from '@/lib/supabase/artist-access'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import {
-  Users, Handshake, Mail, Music2, DollarSign,
-  Send, ArrowUpRight, Globe, MapPin, AlertTriangle, CheckCircle2,
+  Users, Handshake, Mail,
+  DollarSign, Send, AlertTriangle,
+  Calendar, TrendingUp, Clock,
 } from 'lucide-react'
 import Link from 'next/link'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-// Top listener cities from DSR knowledge base — cities not yet on TMTYL 2026
-const LISTENER_MARKETS = [
-  { city: 'Seattle, WA', listeners: 4200, growth: 18 },
-  { city: 'Portland, OR', listeners: 3800, growth: 14 },
-  { city: 'Atlanta, GA', listeners: 5100, growth: 22 },
-  { city: 'Miami, FL', listeners: 4600, growth: 19 },
-  { city: 'San Diego, CA', listeners: 3400, growth: 11 },
-  { city: 'Salt Lake City, UT', listeners: 2900, growth: 16 },
-]
-
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ artist?: string }>
+}) {
+  const { artist: artistId } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  const access = await getArtistAccess(supabase, artistId)
+
   const [
-    { count: artistCount },
     { data: deals },
     { data: gmailConn },
     { data: contacts },
-    { data: profile },
+    { data: memberships },
   ] = await Promise.all([
-    supabase.from('artists').select('*', { count: 'exact', head: true }),
-    supabase.from('deals').select('offer_amount, status, show_date, deal_points').neq('status', 'cancelled'),
+    supabase.from('deals')
+      .select('id, offer_amount, status, show_date, deal_points, title')
+      .eq('artist_id', access?.artistId ?? '')
+      .neq('status', 'cancelled'),
     supabase.from('gmail_connections').select('id, email').eq('user_id', user?.id ?? '').single(),
-    supabase.from('contacts').select('pitch_status', { count: 'exact' }).neq('pitch_status', 'not_contacted'),
-    supabase.from('profiles').select('full_name').eq('id', user?.id ?? '').single(),
+    supabase.from('contacts').select('id', { count: 'exact' }).neq('pitch_status', 'not_contacted'),
+    (supabase as any).from('artist_members')
+      .select('artist_id')
+      .or(`user_id.eq.${user?.id ?? ''},email.eq.${user?.email ?? ''}`),
   ])
 
+  const rosterCount = ((memberships ?? []) as any[])
+    .filter((v: any, i: number, arr: any[]) => arr.findIndex((x: any) => x.artist_id === v.artist_id) === i)
+    .length
+
+  const allDeals = (deals ?? []) as any[]
+  const today = new Date().toISOString().split('T')[0]
+  const confirmedDeals = allDeals.filter(d => ['confirmed', 'completed'].includes(d.status))
+  const upcomingConfirmed = confirmedDeals.filter(d => d.show_date && d.show_date >= today)
+  const pendingDeals = allDeals.filter(d => ['inquiry', 'offer', 'negotiating'].includes(d.status))
+  const totalRevenue = confirmedDeals.reduce((sum, d) => sum + (Number(d.offer_amount) || 0), 0)
+  const pipelineValue = pendingDeals.reduce((sum, d) => sum + (Number(d.offer_amount) || 0), 0)
+
+  const nextShows = upcomingConfirmed
+    .sort((a, b) => (a.show_date ?? '').localeCompare(b.show_date ?? ''))
+    .slice(0, 5)
+
+  const needsAttention = pendingDeals
+    .sort((a, b) => (a.show_date ?? '').localeCompare(b.show_date ?? ''))
+    .slice(0, 5)
+
   const setupSteps = [
-    { label: 'Account configured', done: !!profile?.full_name, href: '/onboarding' },
-    { label: 'Artist on roster', done: (artistCount ?? 0) > 0, href: '/dashboard/artists/new' },
+    { label: 'Artist on roster', done: rosterCount > 0, href: '/dashboard/artists/new' },
     { label: 'Gmail connected', done: !!gmailConn, href: '/api/gmail/connect' },
-    { label: 'Bookings imported', done: (deals?.length ?? 0) > 0, href: '/dashboard/import' },
+    { label: 'Bookings imported', done: allDeals.length > 0, href: '/dashboard/import' },
   ]
   const setupComplete = setupSteps.every(s => s.done)
   const setupProgress = setupSteps.filter(s => s.done).length
 
-  const activeDealCount = deals?.length ?? 0
-  const confirmedDeals = deals?.filter(d => ['confirmed', 'completed'].includes(d.status)) ?? []
-  const totalRevenue = confirmedDeals.reduce((sum, d) => sum + (d.offer_amount ?? 0), 0)
-  const pitchedCount = contacts?.length ?? 0
+  const STATUS_COLORS: Record<string, string> = {
+    confirmed: 'bg-green-500/15 text-green-700 dark:text-green-400',
+    offer: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
+    negotiating: 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-400',
+    inquiry: 'bg-muted text-muted-foreground',
+  }
 
-  // Cities already covered by confirmed deals
-  const coveredCities = new Set(
-    (deals ?? [])
-      .filter(d => ['confirmed', 'offer', 'negotiating'].includes(d.status))
-      .map(d => {
-        const pts = d.deal_points as Record<string, string> | null
-        return pts?.city?.toLowerCase()
-      })
-      .filter(Boolean)
-  )
-
-  const missingMarkets = LISTENER_MARKETS.filter(
-    m => !coveredCities.has(m.city.split(',')[0].toLowerCase())
-  )
+  function dealLabel(deal: any) {
+    const pts = (deal.deal_points ?? {}) as Record<string, string>
+    const city = pts.city ?? deal.title ?? 'TBD'
+    const state = pts.state ?? ''
+    return city + (state ? `, ${state}` : '')
+  }
 
   return (
-    <div className="p-6 space-y-8">
-
-      {/* Setup progress banner */}
-      {!setupComplete && (
-        <div className="border border-yellow-500/30 bg-yellow-500/5 rounded-lg p-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-sm font-semibold">Setup {setupProgress}/{setupSteps.length} complete</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Finish setup to unlock the full pipeline</p>
-                <div className="flex flex-wrap gap-3 mt-3">
-                  {setupSteps.map(s => (
-                    <a key={s.label} href={s.href} className={cn(
-                      'flex items-center gap-1.5 text-xs',
-                      s.done ? 'text-green-600 pointer-events-none' : 'text-yellow-600 hover:underline'
-                    )}>
-                      {s.done
-                        ? <CheckCircle2 className="h-3 w-3" />
-                        : <span className="h-3 w-3 rounded-full border border-yellow-500 inline-block" />
-                      }
-                      {s.label}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <Link href="/onboarding" className={cn(buttonVariants({ size: 'sm', variant: 'outline' }), 'shrink-0 border-yellow-500/50 text-yellow-700 hover:bg-yellow-500/10')}>
-              Continue setup
-            </Link>
-          </div>
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">{access?.artistName ?? 'Dashboard'}</h1>
+          <p className="text-muted-foreground text-sm">
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+          </p>
         </div>
-      )}
-
-      <div>
-        <h1 className="text-2xl font-bold">Overview</h1>
-        <p className="text-muted-foreground text-sm">DirtySnatcha Records — TMTYL 2026</p>
+        {!setupComplete && (
+          <div className="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1.5">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            Setup {setupProgress}/{setupSteps.length} —{' '}
+            <Link href="/onboarding" className="underline">Finish →</Link>
+          </div>
+        )}
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border-l-4 border-l-primary">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Guaranteed Revenue</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Confirmed Revenue</CardTitle>
             <DollarSign className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-black text-primary">
-              ${totalRevenue.toLocaleString()}
-            </div>
+            <div className="text-2xl font-black text-primary">${totalRevenue.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground mt-1">{confirmedDeals.length} confirmed show{confirmedDeals.length !== 1 ? 's' : ''}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active Deals</CardTitle>
-            <Handshake className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pipeline Value</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeDealCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">inquiry → confirmed</p>
+            <div className="text-2xl font-bold">${pipelineValue.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground mt-1">{pendingDeals.length} open deal{pendingDeals.length !== 1 ? 's' : ''}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Promoters Pitched</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Promoters Pitched</CardTitle>
             <Send className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pitchedCount}</div>
+            <div className="text-2xl font-bold">{(contacts as any)?.length ?? 0}</div>
             <p className="text-xs text-muted-foreground mt-1">
               <Link href="/dashboard/outreach" className="hover:underline">view outreach →</Link>
             </p>
@@ -147,11 +138,11 @@ export default async function DashboardPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Roster</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Roster</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{artistCount ?? 0}</div>
+            <div className="text-2xl font-bold">{rosterCount}</div>
             <p className="text-xs text-muted-foreground mt-1">
               <Link href="/dashboard/artists" className="hover:underline">manage roster →</Link>
             </p>
@@ -160,85 +151,124 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Market Intelligence */}
+        {/* Upcoming Shows */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Globe className="h-4 w-4 text-primary" /> Market Intelligence
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Calendar className="h-4 w-4 text-primary" /> Upcoming Shows
             </CardTitle>
-            <CardDescription>High-listener cities not yet on TMTYL 2026</CardDescription>
+            <CardDescription>{upcomingConfirmed.length} confirmed on the books</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            {missingMarkets.length === 0 ? (
-              <p className="text-sm text-muted-foreground">All major listener markets covered.</p>
+            {nextShows.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-2">No upcoming confirmed shows yet.</p>
             ) : (
-              missingMarkets.map((m, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border group hover:border-primary/40 transition-colors"
-                >
-                  <div>
-                    <div className="font-semibold text-sm flex items-center gap-1">
-                      <MapPin className="h-3 w-3 text-muted-foreground" /> {m.city}
+              nextShows.map(deal => {
+                const daysOut = deal.show_date
+                  ? Math.floor((new Date(deal.show_date).getTime() - Date.now()) / 86400000)
+                  : null
+                return (
+                  <Link key={deal.id} href={`/dashboard/deals/${deal.id}`} className="block">
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 hover:bg-muted/60 transition-colors">
+                      <div>
+                        <p className="text-sm font-medium">{dealLabel(deal)}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {deal.show_date ? new Date(deal.show_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'TBD'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        {deal.offer_amount && (
+                          <p className="text-sm font-bold text-primary">${Number(deal.offer_amount).toLocaleString()}</p>
+                        )}
+                        {daysOut !== null && (
+                          <p className={cn('text-xs', daysOut <= 7 ? 'text-orange-500 font-medium' : 'text-muted-foreground')}>
+                            {daysOut === 0 ? '🔥 TODAY' : daysOut === 1 ? 'Tomorrow' : `${daysOut}d`}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground font-mono">
-                      ~{m.listeners.toLocaleString()} est. monthly listeners
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-green-600 dark:text-green-400 font-mono flex items-center">
-                      <ArrowUpRight className="h-3 w-3" />+{m.growth}%
-                    </span>
-                    <Link
-                      href={`/dashboard/outreach`}
-                      className="text-xs opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:underline"
-                    >
-                      Pitch →
-                    </Link>
-                  </div>
-                </div>
-              ))
+                  </Link>
+                )
+              })
+            )}
+            {upcomingConfirmed.length > 5 && (
+              <Link href="/dashboard/calendar" className="text-xs text-primary hover:underline block text-center pt-1">
+                View all {upcomingConfirmed.length} shows →
+              </Link>
             )}
           </CardContent>
         </Card>
 
-        {/* Quick Actions */}
+        {/* Active Negotiations */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Quick Actions</CardTitle>
-            <CardDescription>Common tasks</CardDescription>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Clock className="h-4 w-4 text-yellow-500" /> Active Negotiations
+            </CardTitle>
+            <CardDescription>{pendingDeals.length} deal{pendingDeals.length !== 1 ? 's' : ''} need attention</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Link href="/dashboard/outreach" className={buttonVariants({ variant: 'outline', size: 'sm' }) + ' w-full justify-start gap-2'}>
-              <Send className="h-4 w-4" /> Generate booking pitch
-            </Link>
-            <Link href="/dashboard/gmail?tab=analyze" className={buttonVariants({ variant: 'outline', size: 'sm' }) + ' w-full justify-start gap-2'}>
-              <Mail className="h-4 w-4" /> Analyze incoming offer
-            </Link>
-            <Link href="/dashboard/gmail" className={buttonVariants({ variant: 'outline', size: 'sm' }) + ' w-full justify-start gap-2'}>
-              <Mail className="h-4 w-4" /> Check inbox for offers
-            </Link>
-            <Link href="/dashboard/deals" className={buttonVariants({ variant: 'outline', size: 'sm' }) + ' w-full justify-start gap-2'}>
-              <Handshake className="h-4 w-4" /> View all deals
-            </Link>
-            {!gmailConn && (
-              <a href="/api/gmail/connect" className={buttonVariants({ size: 'sm' }) + ' w-full justify-start gap-2'}>
-                <Mail className="h-4 w-4" /> Connect Gmail
-              </a>
+            {needsAttention.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-2">Pipeline is clear.</p>
+            ) : (
+              needsAttention.map(deal => (
+                <Link key={deal.id} href={`/dashboard/deals/${deal.id}`} className="block">
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 hover:bg-muted/60 transition-colors">
+                    <div>
+                      <p className="text-sm font-medium">{dealLabel(deal)}</p>
+                      <span className={cn('text-[10px] px-2 py-0.5 rounded-full', STATUS_COLORS[deal.status] ?? '')}>
+                        {deal.status}
+                      </span>
+                    </div>
+                    {deal.offer_amount && (
+                      <p className="text-sm font-semibold">${Number(deal.offer_amount).toLocaleString()}</p>
+                    )}
+                  </div>
+                </Link>
+              ))
             )}
+            <Link href="/dashboard/deals" className="text-xs text-primary hover:underline block text-center pt-1">
+              Full pipeline →
+            </Link>
           </CardContent>
         </Card>
       </div>
 
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm">Quick Actions</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          <Link href="/dashboard/outreach" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-2')}>
+            <Send className="h-4 w-4" /> Generate booking pitch
+          </Link>
+          <Link href="/dashboard/gmail?tab=analyze" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-2')}>
+            <Mail className="h-4 w-4" /> Analyze incoming offer
+          </Link>
+          <Link href="/dashboard/deals/new" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-2')}>
+            <Handshake className="h-4 w-4" /> New deal
+          </Link>
+          <Link href="/dashboard/analytics" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-2')}>
+            <TrendingUp className="h-4 w-4" /> Analytics
+          </Link>
+          {!gmailConn && (
+            <a href="/api/gmail/connect" className={cn(buttonVariants({ size: 'sm' }), 'gap-2')}>
+              <Mail className="h-4 w-4" /> Connect Gmail
+            </a>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Connection status */}
-      <div className="flex gap-3 flex-wrap">
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span className={`h-2 w-2 rounded-full ${gmailConn ? 'bg-green-500' : 'bg-muted-foreground'}`} />
-          Gmail {gmailConn ? `(${gmailConn.email})` : 'not connected'}
+      <div className="flex gap-4 flex-wrap text-xs text-muted-foreground">
+        <div className="flex items-center gap-1.5">
+          <span className={`h-2 w-2 rounded-full ${gmailConn ? 'bg-green-500' : 'bg-red-400'}`} />
+          Gmail {gmailConn ? `connected (${gmailConn.email})` : '— not connected'}
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1.5">
           <span className="h-2 w-2 rounded-full bg-muted-foreground" />
-          Spotify not connected
+          Spotify — not connected
         </div>
       </div>
     </div>

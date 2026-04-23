@@ -11,10 +11,19 @@ import { cn } from '@/lib/utils'
 
 export default async function ArtistsPage() {
   const supabase = await createClient()
-  const { data: artists } = await supabase
-    .from('artists')
-    .select('*')
-    .order('name')
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Only show artists this user manages
+  const { data: memberships } = await (supabase as any)
+    .from('artist_members')
+    .select('artist_id, role, artists(*)')
+    .or(`user_id.eq.${user?.id ?? ''},email.eq.${user?.email ?? ''}`)
+
+  const seen = new Set<string>()
+  const artists = ((memberships ?? []) as any[])
+    .filter((m: any) => m.artists && !seen.has(m.artist_id) && seen.add(m.artist_id))
+    .map((m: any) => ({ ...m.artists, _role: m.role }))
+    .sort((a: any, b: any) => (a.stage_name ?? a.name).localeCompare(b.stage_name ?? b.name))
 
   return (
     <div className="p-6 space-y-4">

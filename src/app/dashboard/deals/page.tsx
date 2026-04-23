@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getArtistAccess } from '@/lib/supabase/artist-access'
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import {
@@ -19,13 +20,24 @@ const STATUS_COLORS: Record<string, string> = {
 
 export const metadata = { title: 'Deals — TENx10' }
 
-export default async function DealsPage() {
+export default async function DealsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ artist?: string; status?: string }>
+}) {
+  const { artist: artistId, status: filterStatus } = await searchParams
   const supabase = await createClient()
-  const { data: raw } = await supabase
+  const access = await getArtistAccess(supabase, artistId)
+
+  let query = supabase
     .from('deals')
-    .select('id, title, show_date, offer_amount, status, deal_points, artists(name, stage_name), venues(name, city)')
+    .select('id, title, show_date, offer_amount, status, deal_points, artist_id, artists(name, stage_name), venues(name, city)')
+    .eq('artist_id', access?.artistId ?? '')
     .order('show_date', { ascending: true })
 
+  if (filterStatus) query = query.eq('status', filterStatus)
+
+  const { data: raw } = await query
   const deals = (raw ?? []) as any[]
 
   const today = new Date().toISOString().split('T')[0]
