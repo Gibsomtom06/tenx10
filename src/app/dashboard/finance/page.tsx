@@ -23,7 +23,7 @@ export default async function FinancePage({
 
   const { data: rawDeals } = await supabase
     .from('deals')
-    .select('*, artists(name, stage_name), venues(name, city, state)')
+    .select('*, artists(name, stage_name), venues(name, city, state), deposit_paid, deposit_amount, balance_paid, balance_due_date, net_after_commission')
     .eq('artist_id', access?.artistId ?? '')
     .neq('status', 'cancelled')
     .order('show_date', { ascending: true })
@@ -145,9 +145,21 @@ export default async function FinancePage({
                   const pts = (deal.deal_points ?? {}) as Record<string, any>
                   const city = pts.city ?? deal.title
                   const state = pts.state ?? ''
-                  const depositPaid = !!pts.depositPaid
-                  const balancePaid = !!pts.balancePaid
-                  const depositAmount = pts.depositAmount ? fmt(Number(pts.depositAmount)) : fmt(Math.round(Number(deal.offer_amount) * 0.5))
+                  // Use real DB columns first, fall back to deal_points for legacy rows
+                  const depositPaid = deal.deposit_paid ?? !!pts.depositPaid
+                  const balancePaid = deal.balance_paid ?? !!pts.balancePaid
+                  const depositAmount = deal.deposit_amount
+                    ? fmt(Number(deal.deposit_amount))
+                    : pts.depositAmount
+                    ? fmt(Number(pts.depositAmount))
+                    : fmt(Math.round(Number(deal.offer_amount) * 0.5))
+                  const balanceDue = deal.balance_due_date
+                    ? new Date(deal.balance_due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    : 'Night of show'
+                  const depositDaysUntilShow = deal.show_date
+                    ? Math.ceil((new Date(deal.show_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                    : null
+                  const depositUrgent = !depositPaid && depositDaysUntilShow !== null && depositDaysUntilShow <= 14
                   return (
                     <TableRow key={deal.id}>
                       <TableCell className="font-medium">
@@ -162,10 +174,10 @@ export default async function FinancePage({
                         {deal.offer_amount ? fmt(Number(deal.offer_amount)) : '—'}
                       </TableCell>
                       <TableCell className="text-center">
-                        <div className={`flex items-center justify-center gap-1 text-xs ${depositPaid ? 'text-green-600' : 'text-yellow-600'}`}>
+                        <div className={`flex items-center justify-center gap-1 text-xs ${depositPaid ? 'text-green-600' : depositUrgent ? 'text-red-500' : 'text-yellow-600'}`}>
                           {depositPaid
                             ? <><CheckCircle2 className="h-3.5 w-3.5" />{depositAmount}</>
-                            : <><XCircle className="h-3.5 w-3.5" />Due {depositAmount}</>
+                            : <><XCircle className="h-3.5 w-3.5" />Due {depositAmount}{depositUrgent && depositDaysUntilShow !== null ? ` (${depositDaysUntilShow}d)` : ''}</>
                           }
                         </div>
                       </TableCell>
@@ -175,7 +187,7 @@ export default async function FinancePage({
                             ? <><CheckCircle2 className="h-3.5 w-3.5" />Paid</>
                             : deal.status === 'completed'
                             ? <><XCircle className="h-3.5 w-3.5" />Overdue</>
-                            : <span className="text-muted-foreground">Night of show</span>
+                            : <span className="text-muted-foreground">{balanceDue}</span>
                           }
                         </div>
                       </TableCell>

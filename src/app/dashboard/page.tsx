@@ -4,11 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import {
   Users, Handshake, Mail,
   DollarSign, Send, AlertTriangle,
-  Calendar, TrendingUp, Clock,
+  Calendar, TrendingUp, Clock, Inbox,
 } from 'lucide-react'
 import Link from 'next/link'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { InboxScanner } from './InboxScanner'
 
 export default async function DashboardPage({
   searchParams,
@@ -21,11 +22,14 @@ export default async function DashboardPage({
 
   const access = await getArtistAccess(supabase, artistId)
 
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+
   const [
     { data: deals },
     { data: gmailConn },
     { data: contacts },
     { data: memberships },
+    { data: newOffers },
   ] = await Promise.all([
     supabase.from('deals')
       .select('id, offer_amount, status, show_date, deal_points, title')
@@ -36,6 +40,14 @@ export default async function DashboardPage({
     (supabase as any).from('artist_members')
       .select('artist_id')
       .or(`user_id.eq.${user?.id ?? ''},email.eq.${user?.email ?? ''}`),
+    supabase.from('deals')
+      .select('id, title, offer_amount, deal_points, created_at, source_email_id')
+      .eq('artist_id', access?.artistId ?? '')
+      .eq('status', 'inquiry')
+      .not('source_email_id', 'is', null)
+      .gte('created_at', sevenDaysAgo)
+      .order('created_at', { ascending: false })
+      .limit(5),
   ])
 
   const rosterCount = ((memberships ?? []) as any[])
@@ -57,6 +69,8 @@ export default async function DashboardPage({
   const needsAttention = pendingDeals
     .sort((a, b) => (a.show_date ?? '').localeCompare(b.show_date ?? ''))
     .slice(0, 5)
+
+  const freshOffers = (newOffers ?? []) as any[]
 
   const setupSteps = [
     { label: 'Artist on roster', done: rosterCount > 0, href: '/dashboard/artists/new' },
@@ -149,6 +163,55 @@ export default async function DashboardPage({
           </CardContent>
         </Card>
       </div>
+
+      {/* New Offers Inbox */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Inbox className="h-4 w-4 text-blue-500" /> New Offers
+              {freshOffers.length > 0 && (
+                <span className="bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{freshOffers.length}</span>
+              )}
+            </CardTitle>
+            <InboxScanner gmailConnected={!!gmailConn} />
+          </div>
+          <CardDescription>Offers parsed from Gmail in the last 7 days</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {freshOffers.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-2">
+              No new offers this week. Hit &ldquo;Scan Gmail for Offers&rdquo; to check your inbox.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {freshOffers.map((offer: any) => {
+                const pts = (offer.deal_points ?? {}) as Record<string, any>
+                const city = pts.city ?? offer.title ?? '—'
+                const state = pts.state ?? ''
+                const promoter = pts.promoterName ?? pts.rawFrom ?? ''
+                return (
+                  <Link key={offer.id} href={`/dashboard/deals/${offer.id}`} className="block">
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-blue-500/5 border border-blue-500/10 hover:border-blue-500/30 transition-colors">
+                      <div>
+                        <p className="text-sm font-medium">{city}{state ? `, ${state}` : ''}</p>
+                        {promoter && <p className="text-xs text-muted-foreground">{promoter}</p>}
+                      </div>
+                      <div className="text-right">
+                        {offer.offer_amount
+                          ? <p className="text-sm font-bold text-primary">${Number(offer.offer_amount).toLocaleString()}</p>
+                          : <p className="text-xs text-muted-foreground">No guarantee yet</p>
+                        }
+                        <p className="text-[10px] text-muted-foreground">Review →</p>
+                      </div>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Upcoming Shows */}
