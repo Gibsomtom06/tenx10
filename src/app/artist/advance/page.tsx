@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import { getArtistAccess } from '@/lib/supabase/artist-access'
 import { redirect } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -18,15 +17,32 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default async function ArtistAdvanceIndexPage() {
   const supabase = await createClient()
-  const access = await getArtistAccess(supabase)
-  if (!access) redirect('/dashboard')
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/auth/login')
 
+  // Get all artist memberships for this user
+  const { data: memberships } = await supabase
+    .from('artist_members')
+    .select('artist_id, role, artists(id, name, stage_name)')
+    .eq('user_id', user.id)
+
+  const artistIds = (memberships ?? []).map(m => m.artist_id).filter(Boolean)
+  if (!artistIds.length) redirect('/dashboard')
+
+  // Build a label map: artist_id → display name
+  const artistLabel: Record<string, string> = {}
+  for (const m of memberships ?? []) {
+    const a = (m as any).artists as { id: string; name: string; stage_name: string | null } | null
+    if (a) artistLabel[m.artist_id] = a.stage_name ?? a.name
+  }
+
+  // Fetch all deals for managed artists
   const { data: deals } = await supabase
     .from('deals')
-    .select('id, title, show_date, status, deal_points')
-    .eq('artist_id', access.artistId)
+    .select('id, title, show_date, status, deal_points, artist_id')
+    .in('artist_id', artistIds)
     .neq('status', 'cancelled')
-    .order('show_date', { ascending: true })
+    .order('show_date', { ascending: true, nullsFirst: false })
 
   const today = new Date().toISOString().split('T')[0]
   const upcoming = (deals ?? []).filter(d => d.show_date && d.show_date >= today)
@@ -37,6 +53,10 @@ export default async function ArtistAdvanceIndexPage() {
     const city = pts?.city ?? deal.title
     const state = pts?.state ?? ''
     const venue = pts?.venue ?? ''
+    const artistName = artistLabel[deal.artist_id] ?? ''
+    const daysUntil = deal.show_date
+      ? Math.floor((new Date(deal.show_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+      : null
     return (
       <Link href={`/artist/advance/${deal.id}`}>
         <Card className="hover:border-primary/30 transition-colors cursor-pointer group">
@@ -48,6 +68,14 @@ export default async function ArtistAdvanceIndexPage() {
                   {city}{state ? `, ${state}` : ''}
                 </span>
                 <Badge className={`text-[10px] ${STATUS_COLORS[deal.status] ?? ''}`}>{deal.status}</Badge>
+                {artistIds.length > 1 && (
+                  <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-mono">{artistName}</span>
+                )}
+                {daysUntil !== null && daysUntil <= 3 && daysUntil >= 0 && (
+                  <span className="text-[10px] text-orange-600 font-bold">
+                    {daysUntil === 0 ? '🔥 TODAY' : daysUntil === 1 ? '🔥 Tomorrow' : `${daysUntil} days`}
+                  </span>
+                )}
               </div>
               {venue && <p className="text-xs text-muted-foreground mt-0.5">{venue}</p>}
               {deal.show_date && (

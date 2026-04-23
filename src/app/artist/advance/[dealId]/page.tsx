@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import { getArtistAccess } from '@/lib/supabase/artist-access'
 import { redirect } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,8 +19,16 @@ const STATUS_COLORS: Record<string, string> = {
 export default async function ArtistAdvancePage({ params }: { params: Promise<{ dealId: string }> }) {
   const { dealId } = await params
   const supabase = await createClient()
-  const access = await getArtistAccess(supabase)
-  if (!access) redirect('/dashboard')
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/auth/login')
+
+  // Get all artist_ids this user manages
+  const { data: memberships } = await supabase
+    .from('artist_members')
+    .select('artist_id')
+    .eq('user_id', user.id)
+  const managedArtistIds = (memberships ?? []).map(m => m.artist_id)
+  if (!managedArtistIds.length) redirect('/dashboard')
 
   const { data: rawDeal } = await supabase
     .from('deals')
@@ -32,8 +39,8 @@ export default async function ArtistAdvancePage({ params }: { params: Promise<{ 
   if (!rawDeal) redirect('/artist/advance')
   const deal = rawDeal as any
 
-  // Verify this deal belongs to the user's artist
-  if (deal.artist_id !== access.artistId) redirect('/artist/advance')
+  // Verify this deal belongs to one of the user's managed artists
+  if (!managedArtistIds.includes(deal.artist_id)) redirect('/artist/advance')
 
   // Load threads with messages
   const { data: rawThreads } = await supabase

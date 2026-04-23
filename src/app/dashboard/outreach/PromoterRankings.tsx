@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactElement } from 'react'
 import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -10,7 +11,7 @@ import {
 } from 'lucide-react'
 import type { WarmContact } from '@/app/api/outreach/warm-contacts/route'
 
-const RELATIONSHIP_STYLE: Record<string, { badge: string; icon: JSX.Element; label: string }> = {
+const RELATIONSHIP_STYLE: Record<string, { badge: string; icon: ReactElement; label: string }> = {
   vip:       { badge: 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/30', icon: <Star className="h-3 w-3" />,        label: 'VIP' },
   active:    { badge: 'bg-green-500/15 text-green-600 dark:text-green-400 border-green-500/30',     icon: <TrendingUp className="h-3 w-3" />,    label: 'Active' },
   expansion: { badge: 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30', icon: <Zap className="h-3 w-3" />,           label: 'Expand' },
