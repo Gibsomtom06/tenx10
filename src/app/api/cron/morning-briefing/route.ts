@@ -6,7 +6,7 @@ const THOMAS_EMAIL = 'thomas@dirtysnatcharecords.com'
 const CRON_SECRET = process.env.CRON_SECRET
 
 export async function GET(req: Request) {
-  const resend = new Resend(process.env.RESEND_API_KEY)
+  const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
   // Security: Vercel Cron sends this header. Block unauthorized calls.
   const authHeader = req.headers.get('authorization')
   if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
@@ -72,6 +72,8 @@ export async function GET(req: Request) {
     totalPipeline,
     fmt,
   })
+
+  if (!resend) return NextResponse.json({ error: 'RESEND_API_KEY not configured' }, { status: 500 })
 
   const { data, error } = await resend.emails.send({
     from: 'TENx10 Briefing <briefing@tenx10.co>',
