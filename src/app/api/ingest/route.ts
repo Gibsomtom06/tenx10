@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runIngest } from '@/lib/ingest/core'
 import type { IngestState, ArtistData, Message } from '@/lib/ingest/core'
+import { createClient } from '@/lib/supabase/server'
 
 export type { IngestPhase, IngestState, ArtistData } from '@/lib/ingest/core'
 
@@ -26,11 +27,16 @@ export async function POST(request: NextRequest) {
       researchComplete: false,
     }
 
+    // Get authenticated user for artist save
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
     const output = await runIngest({
       message: body.message ?? '',
       history: body.history ?? [],
       state,
       sessionKey: body.sessionId ? 'web:' + body.sessionId : undefined,
+      managerId: user?.id,
     })
 
     return NextResponse.json({
@@ -38,6 +44,7 @@ export async function POST(request: NextRequest) {
       state: output.state,
       sessionId: body.sessionId,
       history: output.history,
+      savedArtistId: output.savedArtistId,
     })
   } catch (err) {
     console.error('[/api/ingest]', err)

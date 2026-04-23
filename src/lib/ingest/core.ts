@@ -6,7 +6,7 @@
  */
 
 import { anthropic, CLAUDE_MODEL } from '@/lib/anthropic/client'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 
 // ----------------------------------------------------------------
 // Re-export types (single source of truth)
@@ -41,6 +41,7 @@ export interface IngestInput {
   history: Message[]
   state: IngestState
   sessionKey?: string   // platform:userId e.g. "discord:1234567890"
+  managerId?: string    // auth user UUID — enables saving artist to DB at brief phase
 }
 
 export interface IngestOutput {
@@ -48,6 +49,7 @@ export interface IngestOutput {
   state: IngestState
   history: Message[]
   sessionKey?: string
+  savedArtistId?: string
 }
 
 // ----------------------------------------------------------------
@@ -332,11 +334,66 @@ export async function saveSession(sessionKey: string, history: Message[], state:
 }
 
 // ----------------------------------------------------------------
+// Artist Save (upsert to Supabase at brief phase)
+// ----------------------------------------------------------------
+
+async function saveArtist(artistData: ArtistData, managerId: string): Promise<string | undefined> {
+  try {
+    const supabase = await createServiceClient()
+    const spotifyIdMatch = artistData.spotifyUrl?.match(/artist\/([a-zA-Z0-9]+)/)
+    const spotifyArtistId = spotifyIdMatch?.[1] ?? null
+
+    const socialStats: Record<string, string> = {}
+    if (artistData.instagramHandle) socialStats.instagram = artistData.instagramHandle.replace('@', '')
+    if (artistData.tiktokHandle) socialStats.tiktok = artistData.tiktokHandle
+    if (artistData.youtubeUrl) socialStats.youtube = artistData.youtubeUrl
+    if (artistData.soundcloudUrl) socialStats.soundcloud = artistData.soundcloudUrl
+    if (artistData.websiteUrl) socialStats.website = artistData.websiteUrl
+
+    const stageName = artistData.name ?? 'Unknown Artist'
+
+    // Try to find existing artist by stage_name under this manager
+    const { data: existing } = await supabase
+      .from('artists')
+      .select('id')
+      .eq('manager_id', managerId)
+      .ilike('stage_name', stageName)
+      .maybeSingle()
+
+    if (existing) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const updatePayload: any = { updated_at: new Date().toISOString() }
+      if (spotifyArtistId) updatePayload.spotify_artist_id = spotifyArtistId
+      if (Object.keys(socialStats).length > 0) updatePayload.social_stats = socialStats
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: updated } = await supabase.from('artists').update(updatePayload).eq('id', (existing as any).id).select('id').single()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (updated as any)?.id as string | undefined
+    }
+
+    // Insert new artist
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: inserted } = await supabase.from('artists').insert({
+      name: stageName,
+      stage_name: stageName,
+      manager_id: managerId,
+      ...(spotifyArtistId ? { spotify_artist_id: spotifyArtistId } : {}),
+      ...(Object.keys(socialStats).length > 0 ? { social_stats: socialStats } : {}),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any).select('id').single()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (inserted as any)?.id as string | undefined
+  } catch {
+    return undefined
+  }
+}
+
+// ----------------------------------------------------------------
 // Core Ingest Engine
 // ----------------------------------------------------------------
 
 export async function runIngest(input: IngestInput): Promise<IngestOutput> {
-  const { message, sessionKey } = input
+  const { message, sessionKey, managerId } = input
   let { history, state } = input
 
   // Load from session store if key provided and no history
@@ -362,6 +419,8 @@ export async function runIngest(input: IngestInput): Promise<IngestOutput> {
   // Phase transitions
   if (message === '__init__') {
     state = { ...state, phase: 'intro' }
+  } else if (message === '__brief__') {
+    state = { ...state, phase: 'brief' }
   } else if (state.phase === 'intro' && message && message !== '__init__') {
     state = { ...state, phase: 'collect' }
   } else if (state.phase === 'collect') {
@@ -399,6 +458,8 @@ export async function runIngest(input: IngestInput): Promise<IngestOutput> {
       role: 'user' as const,
       content: message === '__init__'
         ? "Begin Phase 1. Introduce the management team, explain the ingest process, and ask for the artist name."
+        : message === '__brief__'
+        ? "Generate the full Phase 1 Intelligence Brief now. Cover all sections: artist overview, platform & metrics, touring summary, revenue snapshot (current by pillar + monthly goal + gap + top 3 immediate unlocks), and immediate action items. Be specific to this artist's data."
         : (message || 'Begin Phase 1 introduction.'),
     },
   ]
@@ -423,5 +484,11 @@ export async function runIngest(input: IngestInput): Promise<IngestOutput> {
     await saveSession(sessionKey, updatedHistory, state)
   }
 
-  return { reply, state, history: updatedHistory, sessionKey }
+  // Save artist to DB when brief is generated
+  let savedArtistId: string | undefined
+  if (state.phase === 'brief' && managerId && state.artistData.name) {
+    savedArtistId = await saveArtist(state.artistData, managerId)
+  }
+
+  return { reply, state, history: updatedHistory, sessionKey, savedArtistId }
 }

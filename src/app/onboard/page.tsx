@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Send, Loader2 } from 'lucide-react'
+import { Send, Loader2, FileText, Plus } from 'lucide-react'
 import type { IngestPhase, IngestState, ArtistData } from '@/app/api/ingest/route'
 
 // ─────────────────────────────────────────────────────────────────
@@ -178,6 +178,7 @@ export default function OnboardPage() {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [history, setHistory] = useState<Message[]>([])
   const [initialized, setInitialized] = useState(false)
+  const [savedArtistId, setSavedArtistId] = useState<string | null>(null)
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -216,7 +217,9 @@ export default function OnboardPage() {
     }
   }, [initialized])
 
-  useEffect(() => { initialize() }, [initialize])
+  useEffect(() => {
+    if (!initialized) initialize()
+  }, [initialized, initialize])
 
   async function send() {
     const text = input.trim()
@@ -238,12 +241,13 @@ export default function OnboardPage() {
           sessionId,
         }),
       })
-      const data = await res.json() as { reply: string; state: IngestState; sessionId?: string; history: Message[] }
+      const data = await res.json() as { reply: string; state: IngestState; sessionId?: string; history: Message[]; savedArtistId?: string }
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
       setHistory(data.history ?? [...history, userMsg, { role: 'assistant', content: data.reply }])
       setState(data.state)
       setPhase(data.state.phase)
       if (data.sessionId) setSessionId(data.sessionId)
+      if (data.savedArtistId) setSavedArtistId(data.savedArtistId)
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: "**🎯 Artist Manager:** Connection dropped. Try again in a moment." }])
     } finally {
@@ -257,6 +261,41 @@ export default function OnboardPage() {
       e.preventDefault()
       send()
     }
+  }
+
+  async function generateBrief() {
+    if (loading) return
+    setLoading(true)
+    const userMsg: Message = { role: 'user', content: 'Generate my brief.' }
+    setMessages(prev => [...prev, userMsg])
+    try {
+      const res = await fetch('/api/ingest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: '__brief__', history, state, sessionId }),
+      })
+      const data = await res.json() as { reply: string; state: IngestState; sessionId?: string; history: Message[]; savedArtistId?: string }
+      setMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
+      setHistory(data.history ?? [...history, userMsg, { role: 'assistant', content: data.reply }])
+      setState(data.state)
+      setPhase(data.state.phase)
+      if (data.savedArtistId) setSavedArtistId(data.savedArtistId)
+    } catch {
+      setMessages(prev => [...prev, { role: 'assistant', content: "**🎯 Artist Manager:** Couldn't generate brief. Try again." }])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function startNewArtist() {
+    setMessages([])
+    setInput('')
+    setPhase('intro')
+    setState({ phase: 'intro', artistData: {} as ArtistData, researchComplete: false })
+    setSessionId(null)
+    setHistory([])
+    setInitialized(false)
+    setSavedArtistId(null)
   }
 
   const phaseIdx = PHASE_INDEX[phase] ?? 0
@@ -332,6 +371,50 @@ export default function OnboardPage() {
             <div className="flex items-center gap-2 text-xs text-white/40">
               <Loader2 className="w-3 h-3 animate-spin" />
               Running research across Supabase, Spotify, Instagram, and website...
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Brief action bar — appears when team is done asking questions */}
+      {phase === 'questions' && !loading && (
+        <div className="border-t border-white/5 bg-[#0d0d15]">
+          <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+            <p className="text-xs text-white/40">Ready to wrap up? Generate the full Phase 1 brief for this artist.</p>
+            <button
+              onClick={generateBrief}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold transition-colors shrink-0"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              Generate My Brief
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Post-brief action bar */}
+      {phase === 'brief' && (
+        <div className="border-t border-white/5 bg-[#0d0d15]">
+          <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+            <p className="text-xs text-white/40">
+              {savedArtistId ? 'Artist saved to your roster.' : 'Brief complete.'}
+            </p>
+            <div className="flex items-center gap-2">
+              {savedArtistId && (
+                <a
+                  href="/dashboard"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 text-white/70 hover:text-white hover:border-white/20 text-xs font-semibold transition-colors"
+                >
+                  View Dashboard
+                </a>
+              )}
+              <button
+                onClick={startNewArtist}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Another Artist
+              </button>
             </div>
           </div>
         </div>
