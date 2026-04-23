@@ -13,8 +13,8 @@ export interface ArtistAccess {
 
 /**
  * Returns artist access for the current user.
- * When a user manages multiple artists, pass `preferArtistId` to select one.
- * `allArtists` always contains the full list for building artist switchers in the nav.
+ * When a user manages multiple artists, pass preferArtistId to select one.
+ * allArtists always contains the full list for building artist switchers in the nav.
  */
 export async function getArtistAccess(
   supabase: SupabaseClient,
@@ -23,36 +23,42 @@ export async function getArtistAccess(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { data: memberships } = await supabase
+  const userEmail = user.email || ''
+  const orFilter = 'user_id.eq.' + user.id + ',email.eq.' + userEmail
+  // Cast to any to bypass Supabase generated-type inference on .or() chains
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = supabase as any
+  const { data: membershipsRaw } = await sb
     .from('artist_members')
     .select('id, role, name, artist_id, artists(id, name, stage_name)')
-    .or(`user_id.eq.${user.id},email.eq.${user.email}`)
+    .or(orFilter)
 
-  if (!memberships?.length) return null
+  const rows: any[] = membershipsRaw ?? []
+  if (!rows.length) return null
 
   // Build the full list for the artist switcher
-  const allArtists = memberships.map(m => {
-    const a = (m as any).artists as { id: string; name: string; stage_name: string | null } | null
+  const allArtists = rows.map((m: any) => {
+    const a = m.artists as { id: string; name: string; stage_name: string | null } | null
     return {
-      artistId: m.artist_id,
-      artistName: a?.stage_name ?? a?.name ?? 'Artist',
+      artistId: m.artist_id as string,
+      artistName: (a ? (a.stage_name || a.name || 'Artist') : 'Artist') as string,
       role: m.role as MemberRole,
     }
   })
 
   // Prefer the explicitly requested artist, then fall back to first
-  const chosen = (preferArtistId
-    ? memberships.find(m => m.artist_id === preferArtistId)
-    : null) ?? memberships[0]
+  const chosen: any = (preferArtistId
+    ? rows.find((m: any) => m.artist_id === preferArtistId)
+    : null) || rows[0]
 
-  const chosenArtist = (chosen as any).artists as { id: string; name: string; stage_name: string | null } | null
+  const chosenArtist = chosen.artists as { id: string; name: string; stage_name: string | null } | null
 
   return {
     role: chosen.role as MemberRole,
-    artistId: chosen.artist_id,
-    artistName: chosenArtist?.stage_name ?? chosenArtist?.name ?? 'Artist',
-    memberName: chosen.name,
-    memberId: chosen.id,
+    artistId: chosen.artist_id as string,
+    artistName: (chosenArtist ? (chosenArtist.stage_name || chosenArtist.name || 'Artist') : 'Artist') as string,
+    memberName: chosen.name as string,
+    memberId: chosen.id as string,
     allArtists,
   }
 }
