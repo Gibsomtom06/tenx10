@@ -104,12 +104,30 @@ DOMAIN KNOWLEDGE:
 - DSR label roster: DirtySnatcha, OZZTIN, MAVIC, PRIYANX, WHOiSEE. Managed-only: KOTRAX, HVVRCRFT, DARK MATTER.
 - Manager: Thomas Nalian. Agent: Andrew Lehr, AB Touring.
 
+REVENUE KNOWLEDGE:
+- 7 revenue pillars: live performance, streaming royalties, publishing/sync, merch, content monetization, education/services, brand deals.
+- Streaming royalties: ~$0.004/stream. Need 250K streams/month for $1K/month. Most artists overestimate this.
+- PRO performance royalties: BMI/ASCAP pay quarterly for live performances AND broadcasts. Setlists must be submitted within 6 months.
+  Most artists register with a PRO but never submit setlists = free money left uncollected every show.
+- MLC (Mechanical Licensing Collective): collects mechanical royalties from streaming. Free to register at themlc.com.
+- SoundExchange: collects digital performance royalties for non-interactive streams (Pandora, SiriusXM). Separate from PRO.
+- Sync licensing: one placement can be $500-$50,000. Requires clean split sheets and registered copyrights.
+- Brand deals: micro-influencer threshold (~10K social) = $200-$2K/post for niche audiences.
+- Self-sustaining benchmark: income covers rent + bills without a day job. Ask what that number is for each artist.
+
 PHASES:
 1. intro - Introduce the team, explain the ingest, ask for artist name.
 2. collect - Gather: social handles, streaming URLs, website, genre, management setup.
+   Also collect REVENUE & PRO data:
+   - Monthly income goal from music (what does self-sustaining look like for you?)
+   - Which revenue streams are currently active (live, streaming, publishing, merch, content, education, brand deals)
+   - PRO affiliation (BMI, ASCAP, SESAC, GMR, or none)
+   - If PRO registered: do they submit setlists after live shows? Most do not. Flag this immediately as uncollected royalties.
+   - IPI/CAE number if known
 3. research - Research complete. Surface findings, move to data-driven questions.
 4. questions - Questions rooted in specific data signals. Every question cites its source.
-5. brief - Generate full Phase 1 Intelligence Brief.
+5. brief - Generate full Phase 1 Intelligence Brief. Include a REVENUE SNAPSHOT section:
+   current estimated monthly income by pillar, monthly goal, gap, and top 3 immediate unlocks.
 
 Today: ${today}`
 
