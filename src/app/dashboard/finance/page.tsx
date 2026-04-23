@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getArtistAccess } from '@/lib/supabase/artist-access'
 import { redirect } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -8,14 +9,22 @@ import Link from 'next/link'
 
 export const metadata = { title: 'Finance — TENx10' }
 
-export default async function FinancePage() {
+export default async function FinancePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ artist?: string }>
+}) {
+  const { artist: artistId } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
+  const access = await getArtistAccess(supabase, artistId)
+
   const { data: rawDeals } = await supabase
     .from('deals')
     .select('*, artists(name, stage_name), venues(name, city, state)')
+    .eq('artist_id', access?.artistId ?? '')
     .neq('status', 'cancelled')
     .order('show_date', { ascending: true })
 

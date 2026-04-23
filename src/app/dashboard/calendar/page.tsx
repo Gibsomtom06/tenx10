@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getArtistAccess } from '@/lib/supabase/artist-access'
 import { redirect } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -13,14 +14,22 @@ const STATUS_COLOR: Record<string, any> = {
   confirmed: 'default', completed: 'secondary', cancelled: 'destructive',
 }
 
-export default async function CalendarPage() {
+export default async function CalendarPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ artist?: string }>
+}) {
+  const { artist: artistId } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
+  const access = await getArtistAccess(supabase, artistId)
+
   const { data: rawDeals } = await supabase
     .from('deals')
     .select('*, deal_points, artists(name, stage_name), venues(name, city, state)')
+    .eq('artist_id', access?.artistId ?? '')
     .neq('status', 'cancelled')
     .not('show_date', 'is', null)
     .order('show_date', { ascending: true })
