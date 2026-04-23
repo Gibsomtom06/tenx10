@@ -9,10 +9,11 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { contactId, artistSlug, notes } = await request.json() as {
+  const { contactId, artistSlug, notes, force } = await request.json() as {
     contactId: string
     artistSlug: PitchArtistSlug
     notes?: string
+    force?: boolean
   }
 
   const artist = PITCH_ARTISTS[artistSlug]
@@ -99,6 +100,15 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // ── Ticket estimate (heuristic — no extra API call) ──────────────────────
+  // Tier contacts by city population tier; gives pitch a concrete draw number
+  const PRIMARY_MARKETS = new Set(['los angeles', 'new york', 'chicago', 'houston', 'phoenix', 'dallas', 'san antonio', 'san diego', 'san jose', 'miami'])
+  const SECONDARY_MARKETS = new Set(['denver', 'seattle', 'portland', 'atlanta', 'nashville', 'minneapolis', 'detroit', 'cleveland', 'pittsburgh', 'salt lake city', 'las vegas', 'austin', 'boston', 'washington', 'philadelphia', 'richmond', 'grand rapids', 'memphis'])
+  const city = contact.city?.toLowerCase() ?? ''
+  const marketTier = PRIMARY_MARKETS.has(city) ? 'primary' : SECONDARY_MARKETS.has(city) ? 'secondary' : 'tertiary'
+  const ticketEstimate = marketTier === 'primary' ? { low: 100, high: 300 } : marketTier === 'secondary' ? { low: 60, high: 180 } : { low: 30, high: 100 }
+  const estimateNote = `Ticket draw estimate: ${ticketEstimate.low}–${ticketEstimate.high} (${marketTier} market)`
+
   // ── Build prompt ─────────────────────────────────────────────────────────
   const contactInfo = [
     contact.name,
@@ -137,6 +147,7 @@ ${artistContext}
 
 Target market: ${contact.city ?? contact.region ?? 'their market'}
 Promoter type: ${contact.market_type ?? 'venue/promoter'}
+${estimateNote}
 ${contextBlock ? `\n${contextBlock}` : ''}
 
 Write the email body only (no subject line). Keep it under 200 words.
@@ -184,6 +195,9 @@ End with Thomas Nalian's contact info: thomas@dirtysnatcha.com / 248-765-1997`,
         pitchType: 'outbound',
         isWarm,
         hasRouting: !!routingContext,
+        marketTier,
+        ticketEstimateLow: ticketEstimate.low,
+        ticketEstimateHigh: ticketEstimate.high,
       },
       created_by: user.id,
     })
@@ -194,6 +208,6 @@ End with Thomas Nalian's contact info: thomas@dirtysnatcha.com / 248-765-1997`,
     draft: { id: draft.id, subject, to: contact.email, body },
     dealId: deal?.id ?? null,
     contact: { ...contact, pitch_status: 'drafted' },
-    meta: { isWarm, hadRelationshipContext: !!relationshipContext, hadRoutingContext: !!routingContext },
+    meta: { isWarm, hadRelationshipContext: !!relationshipContext, hadRoutingContext: !!routingContext, marketTier, ticketEstimate },
   })
 }

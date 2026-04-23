@@ -15,18 +15,27 @@ import type { PitchArtistSlug } from '@/lib/outreach/artist-profiles'
 
 interface PitchState {
   loading: boolean
-  result: { subject: string; body: string; dealId: string | null } | null
+  result: { subject: string; body: string; dealId: string | null; marketTier?: string; ticketEstimate?: { low: number; high: number } } | null
   error: string | null
   duplicate: { message: string; contactId: string; artistSlug: string } | null
 }
 
 const ARTIST_COLORS: Record<string, string> = {
-  dirtysnatcha: 'bg-primary/15 text-primary border-primary/30',
-  hvrcrft:      'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30',
-  'dark-matter':'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30',
-  kotrax:       'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30',
+  dirtysnatcha:  'bg-primary/15 text-primary border-primary/30',
+  hvrcrft:       'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30',
+  'dark-matter': 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30',
+  kotrax:        'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30',
+  whoisee:       'bg-pink-500/15 text-pink-600 dark:text-pink-400 border-pink-500/30',
   'dsr-takeover':'bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/30',
 }
+
+const MANAGED_ROSTER = [
+  { slug: 'dirtysnatcha', name: 'DirtySnatcha', guarantee: '$1.5K–$5K', genre: 'Dubstep / Riddim' },
+  { slug: 'hvrcrft',      name: 'HVRCRFT',      guarantee: '$500–$1.5K', genre: 'Bass Music' },
+  { slug: 'dark-matter',  name: 'Dark Matter',  guarantee: '$500–$1.5K', genre: 'Bass / Dubstep' },
+  { slug: 'kotrax',       name: 'Kotrax',       guarantee: '$500–$1K',   genre: 'Bass Music' },
+  { slug: 'whoisee',      name: 'WHOiSEE',      guarantee: '$500–$2K',   genre: 'Dubstep' },
+]
 
 function timeAgo(iso: string) {
   const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
@@ -66,7 +75,7 @@ function PitchButton({
         return
       }
       if (!res.ok) throw new Error(data.error ?? 'Pitch failed')
-      setState(s => ({ ...s, loading: false, result: { subject: data.draft.subject, body: data.draft.body, dealId: data.dealId } }))
+      setState(s => ({ ...s, loading: false, result: { subject: data.draft.subject, body: data.draft.body, dealId: data.dealId, marketTier: data.meta?.marketTier, ticketEstimate: data.meta?.ticketEstimate } }))
       setOpen(true)
     } catch (e) {
       setState(s => ({ ...s, loading: false, error: e instanceof Error ? e.message : 'Failed' }))
@@ -82,6 +91,11 @@ function PitchButton({
         >
           <CheckCircle2 className="h-3 w-3" />
           Draft saved to Gmail
+          {state.result?.ticketEstimate && (
+            <span className="text-[10px] text-muted-foreground font-normal ml-1">
+              · est. {state.result.ticketEstimate.low}–{state.result.ticketEstimate.high} tickets ({state.result.marketTier})
+            </span>
+          )}
           {open ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
         </button>
         {open && (
@@ -373,6 +387,32 @@ export default function BriefingClient() {
 
   return (
     <div className="space-y-8">
+      {/* Your Managed Roster */}
+      <div className="rounded-xl border bg-muted/20 p-4">
+        <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-3">Your Managed Artists</p>
+        <div className="flex flex-wrap gap-2">
+          {MANAGED_ROSTER.map(a => (
+            <div
+              key={a.slug}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium ${ARTIST_COLORS[a.slug] ?? ''}`}
+            >
+              <span className="font-bold">{a.name}</span>
+              <span className="opacity-60">·</span>
+              <span className="opacity-80">{a.genre}</span>
+              <span className="opacity-60">·</span>
+              <span>{a.guarantee}</span>
+            </div>
+          ))}
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium ${ARTIST_COLORS['dsr-takeover'] ?? ''}`}>
+            <span className="font-bold">DSR Takeover</span>
+            <span className="opacity-60">·</span>
+            <span>Multi-artist package</span>
+            <span className="opacity-60">·</span>
+            <span>$2.5K–$7.5K</span>
+          </div>
+        </div>
+      </div>
+
       {/* Briefing header */}
       <div className="rounded-xl border bg-card p-5 space-y-3">
         <div className="flex items-start justify-between gap-2">

@@ -5,6 +5,7 @@ import MarketEstimator from './MarketEstimator'
 import BriefingClient from './BriefingClient'
 import BookingAgentClient from '@/app/artist/booking/BookingAgentClient'
 import MarketMap from '@/app/artist/booking/MarketMap'
+import PromoterRankings from './PromoterRankings'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 export const metadata = { title: 'Outreach — TENx10' }
@@ -30,9 +31,10 @@ export default async function OutreachPage() {
       </div>
 
       <Tabs defaultValue="briefing" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="briefing">Daily Briefing</TabsTrigger>
           <TabsTrigger value="agent">AI Booking Agent</TabsTrigger>
+          <TabsTrigger value="rankings">Promoter Rankings</TabsTrigger>
           <TabsTrigger value="map">Market Map</TabsTrigger>
           <TabsTrigger value="smart">Smart Outreach</TabsTrigger>
           <TabsTrigger value="market">Market Estimator</TabsTrigger>
@@ -49,6 +51,10 @@ export default async function OutreachPage() {
             and shows the reasoning trail per market. Approved candidates get a draft pitch written.
           </div>
           <BookingAgentClient />
+        </TabsContent>
+
+        <TabsContent value="rankings" className="mt-6 space-y-6">
+          <PromoterRankings />
         </TabsContent>
 
         <TabsContent value="map" className="mt-6 space-y-6">

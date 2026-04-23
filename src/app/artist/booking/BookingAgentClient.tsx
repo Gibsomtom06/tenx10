@@ -40,9 +40,16 @@ function StepBadge({ step }: { step: AgentDecisionStep }) {
   )
 }
 
+const SOURCE_LABEL: Record<string, { label: string; reason: string; color: string }> = {
+  routing:  { label: 'Routing Window',  reason: 'This market fills a geographic gap between confirmed shows — artist is already traveling to the region, making it low-cost to add.',                color: 'bg-primary/10 text-primary border-primary/20' },
+  warm:     { label: 'Warm Alert',      reason: 'This promoter has an existing relationship with DSR — they\'ve confirmed or negotiated deals before, making them highest-conversion.',    color: 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20' },
+  market:   { label: 'New Market',      reason: 'This is an untapped city with strong bass music audience and no current DSR presence — identified as a priority expansion target.',          color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' },
+}
+
 function OpportunityCard({ opp }: { opp: AgentOpportunity }) {
   const [expanded, setExpanded] = useState(false)
   const isApproved = opp.decision === 'approved'
+  const src = SOURCE_LABEL[opp.source]
 
   return (
     <Card className={`border-l-4 ${isApproved ? 'border-l-green-500' : 'border-l-muted'}`}>
@@ -60,26 +67,40 @@ function OpportunityCard({ opp }: { opp: AgentOpportunity }) {
                   {opp.city}{opp.state ? `, ${opp.state}` : ''}
                 </span>
                 <Badge variant="outline" className="text-[10px] capitalize">{opp.artistName}</Badge>
-                <Badge variant="outline" className="text-[10px] capitalize">{opp.source}</Badge>
+                {src && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded border font-medium ${src.color}`}>
+                    {src.label}
+                  </span>
+                )}
                 {opp.contactName && (
-                  <span className="text-[10px] text-muted-foreground">via {opp.contactName}</span>
+                  <span className="text-[10px] text-muted-foreground">→ {opp.contactName}</span>
                 )}
               </div>
-              {opp.estimate && isApproved && (
+
+              {/* WHY this market was chosen */}
+              {src && (
+                <p className="text-[10px] text-muted-foreground mt-1 italic">{src.reason}</p>
+              )}
+
+              {/* Financials — show for both approved and skipped so you see what killed it */}
+              {opp.estimate && (
                 <div className="mt-1 flex items-center gap-3 text-[10px] text-muted-foreground flex-wrap">
-                  <span className="text-foreground font-medium">
-                    ${opp.estimate.recommendedGuarantee.low.toLocaleString()}–${opp.estimate.recommendedGuarantee.high.toLocaleString()}
+                  <span className={isApproved ? 'text-foreground font-medium' : ''}>
+                    ${opp.estimate.recommendedGuarantee.low.toLocaleString()}–${opp.estimate.recommendedGuarantee.high.toLocaleString()} guarantee
                   </span>
-                  <span>{opp.estimate.ticketRange.low}–{opp.estimate.ticketRange.high} tickets</span>
-                  <span>CPT ${opp.estimate.cptProjection}</span>
-                  <span className="capitalize">{opp.estimate.marketTier}</span>
+                  <span>{opp.estimate.ticketRange.low}–{opp.estimate.ticketRange.high} est. tickets</span>
+                  <span className={opp.estimate.cptProjection > 8 ? 'text-red-500 font-medium' : opp.estimate.cptProjection > 5 ? 'text-yellow-600' : 'text-green-600'}>
+                    CPT ${opp.estimate.cptProjection}
+                  </span>
+                  <span className="capitalize">{opp.estimate.marketTier} market</span>
                 </div>
               )}
+
               {opp.skipReason && (
-                <p className="text-[10px] text-muted-foreground mt-0.5 italic">{opp.skipReason}</p>
+                <p className="text-[10px] text-red-500 mt-0.5 font-medium">↳ Skipped: {opp.skipReason}</p>
               )}
               {opp.estimate?.pitchAnchor && isApproved && (
-                <p className="text-[10px] text-primary mt-0.5">{opp.estimate.pitchAnchor}</p>
+                <p className="text-[10px] text-primary mt-0.5 font-medium">↳ {opp.estimate.pitchAnchor}</p>
               )}
             </div>
           </div>
@@ -87,6 +108,7 @@ function OpportunityCard({ opp }: { opp: AgentOpportunity }) {
             <button
               onClick={() => setExpanded(e => !e)}
               className="text-muted-foreground hover:text-foreground shrink-0"
+              title="Show 6-step decision reasoning"
             >
               {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </button>
@@ -94,6 +116,7 @@ function OpportunityCard({ opp }: { opp: AgentOpportunity }) {
         </div>
         {expanded && opp.steps.length > 0 && (
           <div className="mt-2 pl-6 space-y-1 border-t pt-2">
+            <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider mb-1">6-Step Decision Trail</p>
             {opp.steps.map((s, i) => <StepBadge key={i} step={s} />)}
           </div>
         )}

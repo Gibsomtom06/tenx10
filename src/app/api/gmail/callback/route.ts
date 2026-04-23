@@ -30,7 +30,8 @@ export async function GET(request: NextRequest) {
         : null,
     }, { onConflict: 'user_id' })
 
-    return NextResponse.redirect(new URL('/dashboard/gmail?connected=true', request.url))
+    // Redirect back to onboarding if not fully set up; onboarding page will forward to /dashboard if complete
+    return NextResponse.redirect(new URL('/onboarding?gmail_connected=true', request.url))
   } catch (error) {
     console.error('Gmail OAuth error:', error)
     return NextResponse.redirect(new URL('/dashboard/gmail?error=oauth_failed', request.url))
