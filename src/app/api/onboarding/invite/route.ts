@@ -18,7 +18,8 @@ export async function POST(request: NextRequest) {
   const service = await createServiceClient()
 
   // Upsert invite — one active invite per artist
-  const { data: invite, error: inviteErr } = await service
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: invite, error: inviteErr } = await (service as any)
     .from('artist_invites')
     .upsert({
       artist_id: artistId,

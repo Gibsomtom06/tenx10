@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     email: a.artistEmail?.trim() || null,
     phone: a.artistPhone?.trim() || null,
     manager_id: user.id,
-    status: 'active',
+    status: 'active' as const,
     bio: null,
   }))
 

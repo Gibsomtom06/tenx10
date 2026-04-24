@@ -22,7 +22,8 @@ export async function POST(request: NextRequest) {
   const service = await createServiceClient()
 
   // Validate invite is still valid
-  const { data: invite } = await service
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: invite } = await (service as any)
     .from('artist_invites')
     .select('id, expires_at, accepted_at')
     .eq('token', token)
@@ -75,7 +76,8 @@ export async function POST(request: NextRequest) {
   } as any, { onConflict: 'id' })
 
   // Mark invite accepted
-  await service.from('artist_invites').update({ accepted_at: new Date().toISOString() }).eq('id', inviteId)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (service as any).from('artist_invites').update({ accepted_at: new Date().toISOString() }).eq('id', inviteId)
 
   return NextResponse.json({ ok: true, userId })
 }
