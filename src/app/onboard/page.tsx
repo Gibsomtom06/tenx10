@@ -18,18 +18,19 @@ interface Message {
 // ─────────────────────────────────────────────────────────────────
 
 const AGENT_PATTERNS: Array<{ pattern: RegExp; name: string; emoji: string; color: string; bg: string }> = [
-  { pattern: /Artist Manager/i,          name: 'Artist Manager',    emoji: '🎯', color: '#a78bfa', bg: 'rgba(167,139,250,0.1)' },
-  { pattern: /Booking Agent/i,           name: 'Booking Agent',     emoji: '🎤', color: '#60a5fa', bg: 'rgba(96,165,250,0.1)'  },
+  { pattern: /\bXai\b/i,                 name: 'Xai',               emoji: '🎯', color: '#a78bfa', bg: 'rgba(167,139,250,0.1)' },
+  { pattern: /Artist Manager/i,          name: 'Xai',               emoji: '🎯', color: '#a78bfa', bg: 'rgba(167,139,250,0.1)' },
+  { pattern: /Booking/i,                 name: 'Booking',           emoji: '🎤', color: '#60a5fa', bg: 'rgba(96,165,250,0.1)'  },
   { pattern: /International/i,           name: 'Intl. Booking',     emoji: '🌍', color: '#22d3ee', bg: 'rgba(34,211,238,0.1)'  },
   { pattern: /Tour Manager/i,            name: 'Tour Manager',      emoji: '🚌', color: '#fb923c', bg: 'rgba(251,146,60,0.1)'  },
-  { pattern: /Social Media/i,            name: 'Social Media',      emoji: '📱', color: '#f472b6', bg: 'rgba(244,114,182,0.1)' },
-  { pattern: /PR Manager/i,             name: 'PR Manager',        emoji: '📰', color: '#facc15', bg: 'rgba(250,204,21,0.1)'  },
-  { pattern: /Label Executive/i,         name: 'Label Executive',   emoji: '🏷️', color: '#4ade80', bg: 'rgba(74,222,128,0.1)' },
+  { pattern: /Social/i,                  name: 'Social',            emoji: '📱', color: '#f472b6', bg: 'rgba(244,114,182,0.1)' },
+  { pattern: /PR/i,                      name: 'PR',                emoji: '📰', color: '#facc15', bg: 'rgba(250,204,21,0.1)'  },
+  { pattern: /Label/i,                   name: 'Label',             emoji: '🏷️', color: '#4ade80', bg: 'rgba(74,222,128,0.1)' },
 ]
 
 function getAgentStyle(content: string) {
   const match = AGENT_PATTERNS.find(a => a.pattern.test(content.slice(0, 60)))
-  return match ?? { name: 'Management Team', emoji: '⬡', color: '#e2e8f0', bg: 'rgba(255,255,255,0.05)' }
+  return match ?? { name: 'Xai', emoji: '🎯', color: '#a78bfa', bg: 'rgba(167,139,250,0.1)' }
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -148,7 +149,7 @@ function ThinkingDots() {
         🎯
       </div>
       <div>
-        <div className="text-[11px] font-medium mb-1.5 tracking-wide text-violet-400">ARTIST MANAGER</div>
+        <div className="text-[11px] font-medium mb-1.5 tracking-wide text-violet-400">XAI</div>
         <div className="rounded-2xl rounded-tl-sm px-4 py-3" style={{ background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.15)' }}>
           <div className="flex items-center gap-1.5 py-0.5">
             <span className="w-1.5 h-1.5 rounded-full bg-violet-400/60 animate-bounce" style={{ animationDelay: '0ms' }} />
