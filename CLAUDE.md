@@ -1,6 +1,7 @@
 # TENx10 Platform — Claude Code Context
 # DSR is the live proof of concept. This file loads automatically on every Claude Code session.
-# Last Updated: April 2026
+# Last Updated: April 24, 2026
+# ⚡ ACTIVE BUILD: See TASKS.md for the full prioritized queue from the last Cowork session.
 
 ---
 
@@ -8,7 +9,7 @@
 
 TENx10 is an AI-powered artist management SaaS platform. DirtySnatcha Records (DSR) is the live proof of concept — real artists, real shows, real data. The platform scales to any label, manager, or artist. DSR proves the framework works.
 
-**Agent persona:** X (tied to TENx10 multiplier concept)
+**Agent persona:** Xai (the AI manager — "X" is now Xai. Update any legacy "X" references.)
 **Consumer-facing AI layer:** Gemini API
 **Build/premium analysis layer:** Anthropic Claude API (claude-sonnet-4-20250514)
 **Live site:** tenx10.co (Vercel + GitHub: Gibsomtom06/tenx10)
@@ -46,13 +47,38 @@ Skills in `.claude/skills/` load on demand for heavy workflows. Don't memorize t
 
 ## CURRENT BUILD PRIORITY
 
-1. Gmail integration — offer → parse → 6-step engine → counter draft → Gmail drafts
-2. Spotify for Artists OAuth — monthly listeners, popularity score, top cities, save-to-stream
-3. Show offer-to-Gmail draft pipeline — full automation
-4. Catalog evaluation engine — per-track scoring with marketing recommendations
-5. Agent team orchestrator — route user intent to correct specialist agent
+See TASKS.md for the full detailed queue. Short version:
+
+1. **Fix live site** — remove hardcoded DSR content from HomepageClient, ArtistsClient, AboutClient
+2. **Multi-artist manager onboarding** — rebuild /onboarding to support adding 5-10 artists + invite system
+3. **Artist join flow** — /artist/join/[token] page, Spotify connect, lands on artist dashboard
+4. **Artist Revenue Sustainability Engine UI** — the 7-pillar revenue dashboard widget (see TASKS.md)
+5. **Artist-facing Xai chat** — ongoing chat with Xai, escalation to manager via tasks table
+6. **Morning briefings** — daily automated briefs per artist + manager overview
 
 Do not build anything that blocks these unless explicitly directed.
+
+## REVENUE-FIRST FRAMEWORK (platform north star)
+
+**Revenue is the single metric. All other metrics are KPIs that feed into it.**
+
+The platform tracks 7 revenue pillars per artist:
+1. Live Performance — guarantees × shows/mo
+2. Streaming Royalties — ~$0.004/stream
+3. Publishing / Sync — PRO + MLC + SoundExchange (most artists at $0, uncollected)
+4. Merch — 15-20% of show guarantee; decouple via online store
+5. Content Monetization — YouTube monetization, Patreon/fan subs
+6. Education / Services — sample packs, lessons, production
+7. Brand Deals — gear/apparel/lifestyle at 10K+ audience
+
+Every artist has: monthly income goal → current estimated total → gap → top 3 unlocks.
+This is what Xai surfaces. This is what the dashboard shows. This is the frame for every decision.
+
+Agent KPIs tracked:
+- Streams/month (target: 250K)
+- Save-to-stream ratio (target: 10%+ algo, 15%+ threshold)  
+- Shows/month (target: 2+ for income stability)
+- Income diversification: X of 7 pillars active
 
 ---
 

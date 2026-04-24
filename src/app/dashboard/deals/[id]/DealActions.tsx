@@ -151,6 +151,42 @@ export default function DealActions({
 
   return (
     <div className="space-y-3 border-t pt-4">
+      {/* Quick booking reply actions — shown when deal is an inbound offer not yet resolved */}
+      {['inquiry', 'offer', 'negotiating'].includes(status) && (
+        <div className="flex flex-wrap gap-2 pb-3 border-b">
+          <span className="text-xs text-muted-foreground self-center font-medium w-full">Reply to booking agent:</span>
+          <Button
+            size="sm"
+            className="bg-green-600 hover:bg-green-500 text-white gap-1.5"
+            onClick={async () => {
+              await updateStatus('confirmed')
+              setTimeout(() => generateDraft(), 500)
+            }}
+            disabled={saving || drafting}
+          >
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            Accept offer
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={generateDraft}
+            disabled={drafting}
+          >
+            {drafting ? 'Generating...' : 'Counter offer'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-destructive/30 text-destructive hover:bg-destructive/10"
+            onClick={() => updateStatus('cancelled')}
+            disabled={saving}
+          >
+            Pass / decline
+          </Button>
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-3 items-center">
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Status:</span>
@@ -167,7 +203,7 @@ export default function DealActions({
         </div>
 
         <Button variant="outline" size="sm" onClick={generateDraft} disabled={drafting}>
-          {drafting ? 'Generating...' : 'Generate Counter Draft'}
+          {drafting ? 'Generating...' : 'Generate email draft'}
         </Button>
 
         <Button variant="outline" size="sm" onClick={() => setShowTickets(!showTickets)}>

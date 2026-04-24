@@ -6,12 +6,22 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import Link from 'next/link'
-import { Plus, Music2, UserCheck } from 'lucide-react'
+import { Plus, Music2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import InviteButton from './InviteButton'
 
 export default async function ArtistsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+
+  // Get manager's name
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name')
+    .eq('id', user?.id ?? '')
+    .single()
+
+  const managerName = (profile as any)?.full_name ?? 'Your Manager'
 
   // Only show artists this user manages
   const { data: memberships } = await (supabase as any)
@@ -25,10 +35,26 @@ export default async function ArtistsPage() {
     .map((m: any) => ({ ...m.artists, _role: m.role }))
     .sort((a: any, b: any) => (a.stage_name ?? a.name).localeCompare(b.stage_name ?? b.name))
 
+  // Also get direct artists (manager_id based)
+  const { data: directArtists } = await supabase
+    .from('artists')
+    .select('*')
+    .eq('manager_id', user?.id ?? '')
+
+  // Merge and deduplicate
+  const allArtistIds = new Set(artists.map((a: any) => a.id))
+  const allArtists = [
+    ...artists,
+    ...((directArtists ?? []) as any[]).filter((a: any) => !allArtistIds.has(a.id)),
+  ].sort((a: any, b: any) => (a.stage_name ?? a.name).localeCompare(b.stage_name ?? b.name))
+
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Artists</h1>
+        <div>
+          <h1 className="text-2xl font-bold">Artists</h1>
+          <p className="text-sm text-muted-foreground">{allArtists.length} artist{allArtists.length !== 1 ? 's' : ''} on your roster</p>
+        </div>
         <Link href="/dashboard/artists/new" className={cn(buttonVariants({ size: 'sm' }))}>
           <Plus className="h-4 w-4 mr-1" />Add Artist
         </Link>
@@ -46,13 +72,13 @@ export default async function ArtistsPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {artists?.map(artist => (
+          {allArtists?.map((artist: any) => (
             <TableRow key={artist.id}>
               <TableCell>
                 <div className="flex items-center gap-3">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={artist.avatar_url ?? undefined} />
-                    <AvatarFallback>{artist.name[0]}</AvatarFallback>
+                    <AvatarFallback>{(artist.stage_name ?? artist.name ?? '?')[0]}</AvatarFallback>
                   </Avatar>
                   <div>
                     <div className="font-medium">{artist.stage_name ?? artist.name}</div>
@@ -67,14 +93,13 @@ export default async function ArtistsPage() {
                 ) : '—'}
               </TableCell>
               <TableCell>
-                {(artist as any).user_id ? (
-                  <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                    <UserCheck className="h-3.5 w-3.5" />
-                    Linked
-                  </div>
-                ) : (
-                  <span className="text-xs text-muted-foreground">No portal</span>
-                )}
+                <InviteButton
+                  artistId={artist.id}
+                  artistName={artist.stage_name ?? artist.name}
+                  managerName={managerName}
+                  existingEmail={artist.email ?? undefined}
+                  alreadyLinked={!!artist.user_id}
+                />
               </TableCell>
               <TableCell>
                 <Badge variant={artist.status === 'active' ? 'default' : 'secondary'}>
@@ -88,15 +113,22 @@ export default async function ArtistsPage() {
               </TableCell>
             </TableRow>
           ))}
-          {!artists?.length && (
+          {!allArtists?.length && (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                No artists yet
+              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                No artists yet — <Link href="/dashboard/artists/new" className="underline text-primary">add your first</Link>
               </TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
+
+      {allArtists.length > 0 && allArtists.some((a: any) => !a.user_id) && (
+        <p className="text-xs text-muted-foreground">
+          Artists without a portal account can be invited by clicking "Invite" and entering their email.
+          They&apos;ll receive a link to set up their artist dashboard.
+        </p>
+      )}
     </div>
   )
 }
