@@ -31,6 +31,11 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
+    // Gate: brief requires auth (conversion moment — not at start)
+    if (body.message === '__brief__' && !user) {
+      return NextResponse.json({ requiresAuth: true })
+    }
+
     const output = await runIngest({
       message: body.message ?? '',
       history: body.history ?? [],
@@ -45,6 +50,7 @@ export async function POST(request: NextRequest) {
       sessionId: body.sessionId,
       history: output.history,
       savedArtistId: output.savedArtistId,
+      requiresAuth: output.requiresAuth,
     })
   } catch (err) {
     console.error('[/api/ingest]', err)

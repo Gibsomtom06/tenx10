@@ -180,6 +180,7 @@ export default function OnboardPage() {
   const [history, setHistory] = useState<Message[]>([])
   const [initialized, setInitialized] = useState(false)
   const [savedArtistId, setSavedArtistId] = useState<string | null>(null)
+  const [showAuthGate, setShowAuthGate] = useState(false)
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -278,7 +279,12 @@ export default function OnboardPage() {
         body: JSON.stringify({ message: '__brief__', history, state, sessionId }),
       })
       if (!res.ok) throw new Error(`API error ${res.status}`)
-      const data = await res.json() as { reply: string; state: IngestState; sessionId?: string; history: Message[]; savedArtistId?: string }
+      const data = await res.json() as { reply: string; state: IngestState; sessionId?: string; history: Message[]; savedArtistId?: string; requiresAuth?: boolean }
+      if (data.requiresAuth) {
+        setMessages(prev => prev.slice(0, -1)) // remove the "Generate my brief" user message
+        setShowAuthGate(true)
+        return
+      }
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
       setHistory(data.history ?? [...history, userMsg, { role: 'assistant', content: data.reply }])
       setState(data.state)
@@ -300,6 +306,7 @@ export default function OnboardPage() {
     setHistory([])
     setInitialized(false)
     setSavedArtistId(null)
+    setShowAuthGate(false)
   }
 
   const phaseIdx = PHASE_INDEX[phase] ?? 0
@@ -380,8 +387,26 @@ export default function OnboardPage() {
         </div>
       )}
 
+      {/* Auth gate — shown when brief is triggered without an account */}
+      {showAuthGate && phase === 'questions' && !loading && (
+        <div className="border-t border-violet-500/20 bg-violet-950/30">
+          <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-white/90">Your brief is ready.</p>
+              <p className="text-xs text-white/40 mt-0.5">Create a free account so we can save it to the right roster.</p>
+            </div>
+            <a
+              href={`/auth/sign-up?redirect=/onboard`}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold transition-colors shrink-0"
+            >
+              Create Account
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* Brief action bar — appears when team is done asking questions */}
-      {phase === 'questions' && !loading && (
+      {phase === 'questions' && !loading && !showAuthGate && (
         <div className="border-t border-white/5 bg-[#0d0d15]">
           <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
             <p className="text-xs text-white/40">Ready to wrap up? Generate the full Phase 1 brief for this artist.</p>

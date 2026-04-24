@@ -50,6 +50,7 @@ export interface IngestOutput {
   history: Message[]
   sessionKey?: string
   savedArtistId?: string
+  requiresAuth?: boolean
 }
 
 // ----------------------------------------------------------------
@@ -409,8 +410,7 @@ export async function runIngest(input: IngestInput): Promise<IngestOutput> {
   } else if (state.phase === 'collect') {
     const { artistData } = state
     const hasName = !!artistData.name
-    const hasLink = !!(artistData.spotifyUrl || artistData.instagramHandle || artistData.websiteUrl || artistData.soundcloudUrl)
-    if (hasName && hasLink) state = { ...state, phase: 'research' }
+    if (hasName) state = { ...state, phase: 'research' }
   }
 
   // Run research
