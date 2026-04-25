@@ -20,6 +20,7 @@ export async function GET(req: Request) {
   const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   const in14Days = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   const staleCutoff = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString()
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
 
   // Query all confirmed/upcoming shows within next 7 days
   const { data: upcomingShows } = await supabase
@@ -30,13 +31,21 @@ export async function GET(req: Request) {
     .lte('show_date', in7Days)
     .order('show_date', { ascending: true })
 
-  // Query deals needing response: inquiry/offer status, not updated in 3+ days
+  // Query deals needing response: inquiry/offer/negotiating, not updated in 3+ days
   const { data: staleDeals } = await supabase
     .from('deals')
     .select('*, artists(name, stage_name)')
-    .in('status', ['inquiry', 'offer'])
+    .in('status', ['inquiry', 'offer', 'negotiating'])
     .lt('updated_at', staleCutoff)
     .order('updated_at', { ascending: true })
+
+  // This month's confirmed revenue
+  const { data: monthDeals } = await supabase
+    .from('deals')
+    .select('offer_amount')
+    .in('status', ['confirmed', 'completed'])
+    .gte('show_date', monthStart)
+    .lte('show_date', todayStr)
 
   // Query confirmed shows with deposits due in next 14 days (not yet paid)
   const { data: depositsRaw } = await supabase
@@ -60,6 +69,9 @@ export async function GET(req: Request) {
   const pipeline = pipelineDeals ?? []
 
   const totalPipeline = pipeline.reduce((s: number, d: any) => s + (Number(d.offer_amount) || 0), 0)
+  const monthRevenue = (monthDeals ?? []).reduce((s: number, d: any) => s + (Number(d.offer_amount) || 0), 0)
+  const MONTHLY_GOAL = 10000
+  const revenueGap = Math.max(0, MONTHLY_GOAL - monthRevenue)
   const fmt = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 0 })}`
 
   const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
@@ -70,6 +82,9 @@ export async function GET(req: Request) {
     stale,
     deposits,
     totalPipeline,
+    monthRevenue,
+    revenueGap,
+    monthlyGoal: MONTHLY_GOAL,
     fmt,
   })
 
@@ -103,6 +118,9 @@ function buildEmail({
   stale,
   deposits,
   totalPipeline,
+  monthRevenue,
+  revenueGap,
+  monthlyGoal,
   fmt,
 }: {
   dateStr: string
@@ -110,6 +128,9 @@ function buildEmail({
   stale: any[]
   deposits: any[]
   totalPipeline: number
+  monthRevenue: number
+  revenueGap: number
+  monthlyGoal: number
   fmt: (n: number) => string
 }) {
   const showRows = shows.map(d => {
@@ -184,15 +205,22 @@ function buildEmail({
       <h1 style="font-size:26px;font-weight:700;color:#111;margin:0;">${dateStr}</h1>
     </div>
 
-    <!-- Pipeline stat -->
-    <div style="background:#111;color:#fff;border-radius:12px;padding:20px 24px;margin-bottom:32px;display:flex;justify-content:space-between;align-items:center;">
-      <div>
-        <p style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 4px;">Open Pipeline</p>
-        <p style="font-size:32px;font-weight:700;margin:0;letter-spacing:-0.02em;">${fmt(totalPipeline)}</p>
-      </div>
-      <div style="text-align:right;">
-        <p style="font-size:11px;color:#888;margin:0 0 4px;">Deals needing attention</p>
-        <p style="font-size:28px;font-weight:700;margin:0;color:${stale.length > 0 ? '#f87171' : '#4ade80'};">${stale.length}</p>
+    <!-- Stats bar -->
+    <div style="background:#111;color:#fff;border-radius:12px;padding:20px 24px;margin-bottom:32px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;">
+        <div>
+          <p style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 4px;">This Month</p>
+          <p style="font-size:28px;font-weight:700;margin:0;letter-spacing:-0.02em;">${fmt(monthRevenue)}</p>
+          <p style="font-size:12px;color:${revenueGap > 0 ? '#f87171' : '#4ade80'};margin:4px 0 0;">${revenueGap > 0 ? `${fmt(revenueGap)} short of ${fmt(monthlyGoal)} goal` : 'Goal hit'}</p>
+        </div>
+        <div>
+          <p style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 4px;">Open Pipeline</p>
+          <p style="font-size:28px;font-weight:700;margin:0;letter-spacing:-0.02em;">${fmt(totalPipeline)}</p>
+        </div>
+        <div style="text-align:right;">
+          <p style="font-size:11px;color:#888;margin:0 0 4px;">Needs response</p>
+          <p style="font-size:28px;font-weight:700;margin:0;color:${stale.length > 0 ? '#f87171' : '#4ade80'};">${stale.length}</p>
+        </div>
       </div>
     </div>
 
