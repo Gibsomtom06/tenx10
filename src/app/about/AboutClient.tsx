@@ -91,8 +91,8 @@ export default function AboutClient() {
             <div className="space-y-4">
               <div className="bg-white/5 border border-white/10 rounded-xl p-5">
                 <p className="text-white/30 text-xs uppercase tracking-widest mb-1">Proof of concept</p>
-                <p className="text-white font-bold">DirtySnatcha Records</p>
-                <p className="text-white/50 text-sm">The live label running on TENx10. Real artists, real shows, real data. Every feature is tested against actual booking history, real streaming numbers, and an active national touring operation.</p>
+                <p className="text-white font-bold">Built on a live independent label</p>
+                <p className="text-white/50 text-sm">Every feature is tested against real booking history, real streaming numbers, and an active national touring operation — not a prototype dataset.</p>
               </div>
               <div className="bg-white/5 border border-white/10 rounded-xl p-5">
                 <p className="text-white/30 text-xs uppercase tracking-widest mb-1">Philosophy</p>

@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import AboutClient from './AboutClient'
 
 export const metadata: Metadata = {
-  title: 'About — Thomas Nalian | TENx10 Management',
-  description: 'Thomas Nalian is the founder of TENx10 Management and head of DirtySnatcha Records. Music manager, A&R, and technology builder based in Detroit.',
+  title: 'About — TENx10',
+  description: 'TENx10 is an AI-powered artist management platform built by a manager who was tired of running his business on spreadsheets. Booking intelligence, streaming analytics, revenue tracking, and daily AI briefings for independent artists and labels.',
 }
 
 export default function AboutPage() {
