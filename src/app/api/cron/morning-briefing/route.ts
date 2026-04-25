@@ -68,10 +68,29 @@ export async function GET(req: Request) {
     .gte('show_date', todayStr)
     .not('offer_amount', 'is', null)
 
+  // Artists missing PRO registration — writer royalties are uncollectable without this
+  const { data: proPendingRaw } = await supabase
+    .from('artists')
+    .select('stage_name, name')
+    .is('pro_affiliation', null)
+    .order('stage_name')
+
+  // Open tasks due in the next 30 days
+  const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  const { data: openTasksRaw } = await supabase
+    .from('tasks')
+    .select('title, type, due_date, artists(stage_name)')
+    .in('status', ['todo', 'in_progress'])
+    .or(`due_date.is.null,due_date.lte.${in30Days}`)
+    .order('due_date', { ascending: true, nullsFirst: false })
+    .limit(8)
+
   const shows = upcomingShows ?? []
   const stale = staleDeals ?? []
   const deposits = depositsRaw ?? []
   const pipeline = pipelineDeals ?? []
+  const proPending = (proPendingRaw ?? []).filter((a: any) => a.stage_name !== 'DSR')
+  const openTasks = openTasksRaw ?? []
 
   const totalPipeline = pipeline.reduce((s: number, d: any) => s + (Number(d.offer_amount) || 0), 0)
   const monthRevenue = (monthDeals ?? []).reduce((s: number, d: any) => s + (Number(d.offer_amount) || 0), 0)
@@ -90,13 +109,15 @@ export async function GET(req: Request) {
     monthRevenue,
     revenueGap,
     monthlyGoal: MONTHLY_GOAL,
+    proPending,
+    openTasks,
     fmt,
   })
 
   // Send to Discord
   const discordWebhook = process.env.DISCORD_WEBHOOK_URL
   if (discordWebhook) {
-    const discordMsg = buildDiscordMessage({ dateStr, shows, stale, deposits, totalPipeline, monthRevenue, revenueGap, monthlyGoal: MONTHLY_GOAL, fmt })
+    const discordMsg = buildDiscordMessage({ dateStr, shows, stale, deposits, totalPipeline, monthRevenue, revenueGap, monthlyGoal: MONTHLY_GOAL, proPending, openTasks, fmt })
     await fetch(discordWebhook, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -121,12 +142,14 @@ export async function GET(req: Request) {
     stale: stale.length,
     deposits: deposits.length,
     pipeline: totalPipeline,
+    pro_pending: proPending.length,
+    open_tasks: openTasks.length,
   })
 }
 
-function buildDiscordMessage({ dateStr, shows, stale, deposits, totalPipeline, monthRevenue, revenueGap, monthlyGoal, fmt }: {
+function buildDiscordMessage({ dateStr, shows, stale, deposits, totalPipeline, monthRevenue, revenueGap, monthlyGoal, proPending, openTasks, fmt }: {
   dateStr: string, shows: any[], stale: any[], deposits: any[], totalPipeline: number,
-  monthRevenue: number, revenueGap: number, monthlyGoal: number, fmt: (n: number) => string
+  monthRevenue: number, revenueGap: number, monthlyGoal: number, proPending: any[], openTasks: any[], fmt: (n: number) => string
 }) {
   const fields = []
 
@@ -175,6 +198,20 @@ function buildDiscordMessage({ dateStr, shows, stale, deposits, totalPipeline, m
     fields.push({ name: `💰 Deposits Due (${deposits.length})`, value: depositLines, inline: false })
   }
 
+  if (proPending.length > 0) {
+    const proLines = proPending.map((a: any) => `• ${a.stage_name} — no PRO registration (writer royalties uncollectable)`).join('\n')
+    fields.push({ name: `📋 PRO Registration Needed (${proPending.length})`, value: proLines, inline: false })
+  }
+
+  if (openTasks.length > 0) {
+    const taskLines = openTasks.map((t: any) => {
+      const artist = (t.artists as any)?.stage_name ? ` [${(t.artists as any).stage_name}]` : ''
+      const due = t.due_date ? ` — due ${new Date(t.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''
+      return `• ${t.title}${artist}${due}`
+    }).join('\n')
+    fields.push({ name: `✅ Open Tasks (${openTasks.length})`, value: taskLines, inline: false })
+  }
+
   fields.push({ name: '​', value: '[Open Dashboard →](https://tenx10.co/dashboard)', inline: false })
 
   return {
@@ -196,6 +233,8 @@ function buildEmail({
   monthRevenue,
   revenueGap,
   monthlyGoal,
+  proPending,
+  openTasks,
   fmt,
 }: {
   dateStr: string
@@ -206,6 +245,8 @@ function buildEmail({
   monthRevenue: number
   revenueGap: number
   monthlyGoal: number
+  proPending: any[]
+  openTasks: any[]
   fmt: (n: number) => string
 }) {
   const showRows = shows.map(d => {
@@ -325,6 +366,29 @@ function buildEmail({
       ['Artist', 'City', 'Show Date', 'Amount Due'],
       'No unpaid deposits due in the next 14 days.'
     )}
+
+    ${proPending.length > 0 ? `
+    <div style="margin-bottom:32px;">
+      <h2 style="font-size:14px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 12px;">PRO Registration Needed <span style="background:#dc262622;color:#dc2626;padding:2px 8px;border-radius:99px;font-size:12px;">${proPending.length}</span></h2>
+      <p style="color:#666;font-size:12px;margin:0 0 10px;">These artists have no PRO on file. Writer royalties are uncollectable until they register.</p>
+      <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+        <thead><tr><th style="padding:8px 12px;text-align:left;font-size:12px;color:#888;font-weight:600;border-bottom:2px solid #f0f0f0;">Artist</th><th style="padding:8px 12px;text-align:left;font-size:12px;color:#888;font-weight:600;border-bottom:2px solid #f0f0f0;">Action</th></tr></thead>
+        <tbody>${proPending.map((a: any) => `<tr><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-weight:600;">${a.stage_name}</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;color:#dc2626;">Register BMI (free) or ASCAP ($50) — send IPI to thomas@dirtysnatcha.com</td></tr>`).join('')}</tbody>
+      </table>
+    </div>` : ''}
+
+    ${openTasks.length > 0 ? `
+    <div style="margin-bottom:32px;">
+      <h2 style="font-size:14px;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 12px;">Open Tasks <span style="background:#6366f122;color:#6366f1;padding:2px 8px;border-radius:99px;font-size:12px;">${openTasks.length}</span></h2>
+      <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+        <thead><tr><th style="padding:8px 12px;text-align:left;font-size:12px;color:#888;font-weight:600;border-bottom:2px solid #f0f0f0;">Task</th><th style="padding:8px 12px;text-align:left;font-size:12px;color:#888;font-weight:600;border-bottom:2px solid #f0f0f0;">Artist</th><th style="padding:8px 12px;text-align:left;font-size:12px;color:#888;font-weight:600;border-bottom:2px solid #f0f0f0;">Due</th></tr></thead>
+        <tbody>${openTasks.map((t: any) => {
+          const artist = (t.artists as any)?.stage_name ?? '—'
+          const due = t.due_date ? new Date(t.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'
+          return `<tr><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;">${t.title}</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;color:#888;">${artist}</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;color:#888;">${due}</td></tr>`
+        }).join('')}</tbody>
+      </table>
+    </div>` : ''}
 
     <div style="text-align:center;padding-top:24px;border-top:1px solid #e5e5e5;">
       <a href="https://tenx10.co/dashboard" style="display:inline-block;background:#111;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">Open Dashboard</a>
