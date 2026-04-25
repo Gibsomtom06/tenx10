@@ -22,6 +22,8 @@ export interface PublishingTrack {
   mlc_registered: boolean
   mlc_song_code: string | null
   soundexchange_registered: boolean
+  cmrra_registered: boolean
+  cmrra_work_id: string | null
   label: string | null
   notes: string | null
 }
@@ -59,7 +61,8 @@ export default function PublishingClient({ tracks, artistName }: Props) {
   const mlcCount = tracks.filter(t => t.mlc_registered).length
   const isrcCount = tracks.filter(t => t.isrc).length
   const sxCount = tracks.filter(t => t.soundexchange_registered).length
-  const needsAction = tracks.filter(t => !t.mlc_registered || !t.isrc).length
+  const cmrraCount = tracks.filter(t => t.cmrra_registered).length
+  const needsAction = tracks.filter(t => !t.mlc_registered || !t.isrc || !t.cmrra_registered).length
 
   // Estimated uncollected: MLC pays ~$0.091/stream for mechanicals
   // DSR has ~14M lifetime streams, ~8K/month. Rough estimate: 54 tracks × 8K avg = lots
@@ -72,7 +75,7 @@ export default function PublishingClient({ tracks, artistName }: Props) {
     if (!matchesSearch) return false
     if (filter === 'missing_mlc') return !t.mlc_registered
     if (filter === 'missing_isrc') return !t.isrc
-    if (filter === 'needs_action') return !t.mlc_registered || !t.isrc
+    if (filter === 'needs_action') return !t.mlc_registered || !t.isrc || !t.cmrra_registered
     return true
   })
 
@@ -162,6 +165,7 @@ export default function PublishingClient({ tracks, artistName }: Props) {
                   <th className="text-left py-2 px-3 font-medium">ASCAP</th>
                   <th className="text-left py-2 px-3 font-medium">MLC</th>
                   <th className="text-left py-2 px-3 font-medium">SX</th>
+                  <th className="text-left py-2 px-3 font-medium">CMRRA</th>
                   <th className="text-left py-2 px-3 font-medium">share</th>
                   <th className="text-left py-2 px-3 font-medium">label</th>
                   <th className="py-2 px-4" />
@@ -206,6 +210,14 @@ export default function PublishingClient({ tracks, artistName }: Props) {
                       </td>
                       <td className="py-2 px-3">
                         <StatusDot ok={track.soundexchange_registered} />
+                      </td>
+                      <td className="py-2 px-3">
+                        <div className="flex items-center gap-1">
+                          <StatusDot ok={track.cmrra_registered} />
+                          {track.cmrra_work_id && (
+                            <span className="font-mono text-[10px] text-muted-foreground">{track.cmrra_work_id}</span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-2 px-3 text-[11px] text-muted-foreground">
                         {track.composer_share != null ? `${track.composer_share}%` : '—'}
