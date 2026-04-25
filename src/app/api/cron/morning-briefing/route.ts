@@ -83,7 +83,7 @@ export async function GET(req: Request) {
     .in('status', ['todo', 'in_progress'])
     .or(`due_date.is.null,due_date.lte.${in30Days}`)
     .order('due_date', { ascending: true, nullsFirst: false })
-    .limit(8)
+    .limit(20)
 
   const shows = upcomingShows ?? []
   const stale = staleDeals ?? []
