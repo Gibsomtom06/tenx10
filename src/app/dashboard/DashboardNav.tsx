@@ -7,7 +7,7 @@ import {
   Calendar, DollarSign, FileText, BarChart2,
   FolderOpen, Settings, Bot, Send, Upload, Disc3,
   CalendarDays, Newspaper, CheckSquare, LogOut,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, TrendingUp,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -52,6 +52,7 @@ const NAV_GROUPS = [
     label: 'Finance',
     items: [
       { href: '/dashboard/finance', label: 'Finance', icon: DollarSign },
+      { href: '/dashboard/revenue', label: 'Revenue Engine', icon: TrendingUp },
       { href: '/dashboard/contracts', label: 'Contracts', icon: FileText },
     ],
   },
@@ -179,7 +180,7 @@ function DashboardNavInner({ artists, userEmail }: Props) {
           )}
         >
           <Bot className="h-4 w-4" />
-          Ask X
+          Ask Xai
         </Link>
         <div className="px-4 py-1">
           <p className="text-[10px] text-muted-foreground truncate">{userEmail}</p>
