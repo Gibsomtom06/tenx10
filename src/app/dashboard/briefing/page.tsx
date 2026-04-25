@@ -8,6 +8,7 @@ import {
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { BriefingInbox } from './BriefingInbox'
+import { TriggerBriefingButton } from './TriggerBriefingButton'
 
 export const metadata = { title: 'Morning Briefing — TENx10' }
 
@@ -175,6 +176,9 @@ export default async function BriefingPage({
         <p className="text-sm text-muted-foreground mt-1">
           {access?.artistName ?? 'Dashboard'} · {criticalItems.length === 0 ? 'Nothing urgent today.' : `${criticalItems.length} item${criticalItems.length !== 1 ? 's' : ''} need attention`}
         </p>
+        <div className="mt-3">
+          <TriggerBriefingButton />
+        </div>
       </div>
 
       {/* Revenue Snapshot */}

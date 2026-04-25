@@ -7,16 +7,18 @@ const CRON_SECRET = process.env.CRON_SECRET
 
 export async function GET(req: Request) {
   const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
-  // Security: Vercel Cron sends this header. Block unauthorized calls.
   const authHeader = req.headers.get('authorization')
-  const adminSecret = process.env.SUPABASE_SERVICE_ROLE_KEY
   const isCron = CRON_SECRET && authHeader === `Bearer ${CRON_SECRET}`
-  const isAdmin = adminSecret && authHeader === `Bearer ${adminSecret}`
-  if (CRON_SECRET && !isCron && !isAdmin) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
 
   const supabase = await createClient()
+
+  if (!isCron) {
+    // Allow logged-in users so the dashboard "Send Now" button works
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user && CRON_SECRET) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+  }
 
   const now = new Date()
   const todayStr = now.toISOString().split('T')[0]
