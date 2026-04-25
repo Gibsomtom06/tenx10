@@ -36,7 +36,7 @@ export default async function ArtistsPage() {
     .sort((a: any, b: any) => (a.stage_name ?? a.name).localeCompare(b.stage_name ?? b.name))
 
   // Also get direct artists (manager_id based, managed only)
-  const { data: directArtists } = await supabase
+  const { data: directArtists } = await (supabase as any)
     .from('artists')
     .select('*')
     .eq('manager_id', user?.id ?? '')
