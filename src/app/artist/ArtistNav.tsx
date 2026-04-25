@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import {
   GitBranch, Calendar, Music2, FileText, Bot,
   LogOut, LayoutDashboard, Disc3, Send, ClipboardList,
-  ExternalLink,
+  ExternalLink, UserCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -28,6 +28,7 @@ const ARTIST_NAV: NavItem[] = [
   { href: '/artist/advance', label: 'Advances', icon: FileText },
   { href: '/artist/catalog', label: 'Catalog', icon: Disc3 },
   { href: '/artist/releases', label: 'Releases', icon: Music2 },
+  { href: '/artist/profile', label: 'My Profile', icon: UserCircle },
 ]
 
 const ADMIN_NAV: NavItem[] = [
@@ -103,7 +104,7 @@ export function ArtistNav({ role, artistName, memberName }: Props) {
             )}
           >
             <Bot className="h-4 w-4" />
-            Ask X
+            Ask Xai
           </Link>
         )}
         {role === 'admin' && (

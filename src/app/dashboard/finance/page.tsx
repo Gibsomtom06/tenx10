@@ -117,7 +117,7 @@ export default async function FinancePage({
                 <p className="font-bold text-xl mt-1">{fmt(totalConfirmed * 0.10)}</p>
               </div>
               <div>
-                <p className="text-muted-foreground">Artist — Lee (80%)</p>
+                <p className="text-muted-foreground">Artist (80%)</p>
                 <p className="font-bold text-xl mt-1">{fmt(totalConfirmed * 0.80)}</p>
               </div>
             </div>
