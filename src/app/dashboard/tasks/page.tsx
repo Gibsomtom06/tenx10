@@ -147,10 +147,10 @@ export default function TasksPage() {
     if (!newTitle.trim()) return
     setSaving(true)
     const { data: { user } } = await supabase.auth.getUser()
-    const { data, error } = await supabase.from('tasks').insert({
+    const { data, error } = await (supabase as any).from('tasks').insert({
       title: newTitle.trim(),
       type: newType,
-      status: 'todo' as const,
+      status: 'todo',
       due_date: newDue || null,
       description: newDesc || null,
       created_by: user!.id,
