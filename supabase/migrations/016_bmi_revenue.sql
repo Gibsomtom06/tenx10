@@ -38,7 +38,7 @@ ALTER TABLE artist_revenue_goals ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Artists see own revenue goals" ON artist_revenue_goals
   FOR ALL USING (
     artist_id IN (
-      SELECT id FROM artists WHERE created_by = auth.uid()
+      SELECT id FROM artists WHERE user_id = auth.uid()
     )
   );
 
@@ -58,7 +58,7 @@ ALTER TABLE artist_revenue_streams ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Artists see own revenue streams" ON artist_revenue_streams
   FOR ALL USING (
     artist_id IN (
-      SELECT id FROM artists WHERE created_by = auth.uid()
+      SELECT id FROM artists WHERE user_id = auth.uid()
     )
   );
 

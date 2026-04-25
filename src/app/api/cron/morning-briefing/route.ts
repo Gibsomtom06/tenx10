@@ -31,21 +31,24 @@ export async function GET(req: Request) {
     .lte('show_date', in7Days)
     .order('show_date', { ascending: true })
 
-  // Query deals needing response: inquiry/offer/negotiating, not updated in 3+ days
+  // Query deals needing response: future shows only, in active negotiation, not updated in 3+ days
   const { data: staleDeals } = await supabase
     .from('deals')
     .select('*, artists(name, stage_name)')
     .in('status', ['inquiry', 'offer', 'negotiating'])
     .lt('updated_at', staleCutoff)
+    .gte('show_date', todayStr)
+    .not('show_date', 'is', null)
     .order('updated_at', { ascending: true })
 
-  // This month's confirmed revenue
+  // This month's confirmed revenue — all confirmed shows this month (past + future)
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
   const { data: monthDeals } = await supabase
     .from('deals')
     .select('offer_amount')
     .in('status', ['confirmed', 'completed'])
     .gte('show_date', monthStart)
-    .lte('show_date', todayStr)
+    .lte('show_date', monthEnd)
 
   // Query confirmed shows with deposits due in next 14 days (not yet paid)
   const { data: depositsRaw } = await supabase
@@ -57,11 +60,13 @@ export async function GET(req: Request) {
     .lte('show_date', in14Days)
     .order('show_date', { ascending: true })
 
-  // Pipeline value across all open deals
+  // Pipeline value: open deals for future shows with actual offer amounts
   const { data: pipelineDeals } = await supabase
     .from('deals')
     .select('offer_amount, status')
     .in('status', ['inquiry', 'offer', 'negotiating'])
+    .gte('show_date', todayStr)
+    .not('offer_amount', 'is', null)
 
   const shows = upcomingShows ?? []
   const stale = staleDeals ?? []
