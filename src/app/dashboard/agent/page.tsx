@@ -20,18 +20,18 @@ interface Message {
 // ─────────────────────────────────────────────────────────────────
 
 const AGENT_PATTERNS = [
-  { pattern: /Artist Manager/i,  name: 'Artist Manager',  emoji: '🎯', color: '#a78bfa', bg: 'rgba(167,139,250,0.08)' },
-  { pattern: /Booking Agent/i,   name: 'Booking Agent',   emoji: '🎤', color: '#60a5fa', bg: 'rgba(96,165,250,0.08)'  },
+  { pattern: /Artist Manager|Xai/i,  name: 'Xai — Artist Manager',  emoji: '⬡', color: '#a78bfa', bg: 'rgba(167,139,250,0.08)' },
+  { pattern: /Booking Agent|Deal Maker/i,   name: 'Booking Agent',   emoji: '🎤', color: '#60a5fa', bg: 'rgba(96,165,250,0.08)'  },
   { pattern: /International/i,   name: 'Intl. Booking',   emoji: '🌍', color: '#22d3ee', bg: 'rgba(34,211,238,0.08)'  },
-  { pattern: /Tour Manager/i,    name: 'Tour Manager',    emoji: '🚌', color: '#fb923c', bg: 'rgba(251,146,60,0.08)'  },
-  { pattern: /Social Media/i,    name: 'Social Media',    emoji: '📱', color: '#f472b6', bg: 'rgba(244,114,182,0.08)' },
+  { pattern: /RJ Jackson|CMO|COO/i,  name: 'RJ Jackson — CMO',      emoji: '📣', color: '#f472b6', bg: 'rgba(244,114,182,0.08)' },
+  { pattern: /Social Media|Algorithm/i, name: 'Social Media',        emoji: '📱', color: '#fb923c', bg: 'rgba(251,146,60,0.08)'  },
   { pattern: /PR Manager/i,      name: 'PR Manager',      emoji: '📰', color: '#facc15', bg: 'rgba(250,204,21,0.08)'  },
-  { pattern: /Label Executive/i, name: 'Label Executive', emoji: '🏷️', color: '#4ade80', bg: 'rgba(74,222,128,0.08)' },
+  { pattern: /Release Agent|Launch/i, name: 'Release Agent',         emoji: '🚀', color: '#4ade80', bg: 'rgba(74,222,128,0.08)' },
 ]
 
 function getAgentStyle(content: string) {
-  const match = AGENT_PATTERNS.find(a => a.pattern.test(content.slice(0, 80)))
-  return match ?? { name: 'Management Team', emoji: '⬡', color: 'hsl(var(--muted-foreground))', bg: 'hsl(var(--muted))' }
+  const match = AGENT_PATTERNS.find(a => a.pattern.test(content.slice(0, 100)))
+  return match ?? { name: 'Xai', emoji: '⬡', color: '#a78bfa', bg: 'rgba(167,139,250,0.08)' }
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -84,8 +84,10 @@ const PHASE_LABELS: Record<IngestPhase, string> = {
 const QUICK_PROMPTS = [
   'Run a full ingest on DirtySnatcha',
   'What does the team need from me this week?',
-  'Evaluate the current tour routing',
-  'What streaming markets should we be targeting?',
+  'Evaluate the current tour routing and flag any routing gaps',
+  'Where are we leaving money on the table right now?',
+  'What streaming markets should we target next?',
+  'Build a PR plan for the next release',
 ]
 
 // ─────────────────────────────────────────────────────────────────
@@ -186,7 +188,7 @@ export default function DashboardAgentPage() {
             <span className="text-[10px] font-black text-violet-400">10</span>
           </div>
           <div>
-            <h1 className="font-semibold text-sm leading-none">Management Team</h1>
+            <h1 className="font-semibold text-sm leading-none">Xai — AI Management Team</h1>
             <p className="text-[11px] text-muted-foreground mt-0.5">{PHASE_LABELS[phase]}</p>
           </div>
         </div>

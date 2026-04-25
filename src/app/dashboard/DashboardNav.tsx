@@ -7,7 +7,7 @@ import {
   Calendar, DollarSign, FileText, BarChart2,
   FolderOpen, Settings, Bot, Send, Upload, Disc3,
   CalendarDays, Newspaper, CheckSquare, LogOut,
-  ChevronDown, ChevronUp, TrendingUp,
+  ChevronDown, ChevronUp, TrendingUp, Zap,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -26,6 +26,7 @@ const NAV_GROUPS = [
     label: 'Booking',
     items: [
       { href: '/dashboard', label: 'Overview', icon: LayoutDashboard, exact: true },
+      { href: '/dashboard/briefing', label: 'Briefing', icon: Zap },
       { href: '/dashboard/deals', label: 'Deals', icon: Handshake },
       { href: '/dashboard/outreach', label: 'Outreach', icon: Send },
       { href: '/dashboard/calendar', label: 'Calendar', icon: Calendar },
