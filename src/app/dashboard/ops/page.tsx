@@ -20,6 +20,27 @@ export const metadata = { title: '10 Research Group — Command Center' }
 // verifyNote: what to look for to confirm this is real and working
 
 const WORK_LOG = [
+  // ── April 22 ──
+  {
+    id: 'migration-dad-waitlist',
+    label: 'DAD waitlist table built — tenx10.co/dad signup live',
+    detail: 'dad_waitlist table created with email, name, use_case. Stripe columns (stripe_customer_id, paid, paid_at) added. RLS policy fixed so anyone can sign up without being logged in.',
+    verifyNote: 'Go to tenx10.co/dad and submit the signup form. Check Supabase → Table Editor → dad_waitlist — your entry should appear.',
+    status: 'done' as const,
+    verifyHref: 'https://supabase.com/dashboard/project/ocscxqaythiuidkwjuvg/editor',
+    area: 'database',
+  },
+  // ── April 23 ──
+  {
+    id: 'migration-show-tracking',
+    label: 'Show tracking columns added to deals',
+    detail: 'ticket_capacity, fb_event_posted, fb_event_link, promoter_posting, promoter_post_link added to deals table. Lets you track whether the Facebook event is live and whether the promoter posted.',
+    verifyNote: 'Open any deal in the pipeline. Look for ticket capacity or FB event fields. They exist even if blank on older deals.',
+    status: 'done' as const,
+    verifyHref: '/dashboard/deals',
+    area: 'database',
+  },
+  // ── April 25 ──
   {
     id: 'migration-artist-invites',
     label: 'artist_invites table added to database',
@@ -37,6 +58,33 @@ const WORK_LOG = [
     status: 'done' as const,
     verifyHref: '/dashboard/artists',
     area: 'database',
+  },
+  {
+    id: 'migration-revenue-tables',
+    label: 'Revenue goals + revenue streams tables added to database',
+    detail: 'artist_revenue_goals table (monthly target per artist) and artist_revenue_streams table (7 revenue pillars: live, streaming, publishing, merch, content, education, brand deals). Foundation for the Revenue Engine.',
+    verifyNote: 'Go to Revenue page. You should see the 7 revenue pillars. Tables exist in Supabase even if no data entered yet.',
+    status: 'done' as const,
+    verifyHref: '/dashboard/revenue',
+    area: 'database',
+  },
+  {
+    id: 'briefing-auth-fix',
+    label: 'Morning briefing 401 error fixed — manual sends now work',
+    detail: 'The "Send Briefing Now" button was returning 401 every time because the auth check was comparing the wrong secret header. Fixed by switching to Supabase session auth — if you are logged in, the request goes through.',
+    verifyNote: 'Go to Briefing page and click "Send Briefing Now". Should succeed immediately (no 401). Check Discord for the message.',
+    status: 'done' as const,
+    verifyHref: '/dashboard/briefing',
+    area: 'platform',
+  },
+  {
+    id: 'nav-command-center',
+    label: 'Command Center added to the navigation sidebar',
+    detail: '"10 Research Group" section added at the top of the sidebar nav with a Command Center link to /dashboard/ops. This page.',
+    verifyNote: 'Look at the left sidebar. The first nav group should say "10 Research Group" with a globe icon linking here.',
+    status: 'done' as const,
+    verifyHref: '/dashboard/ops',
+    area: 'platform',
   },
   {
     id: 'migration-pub-table',
@@ -176,12 +224,30 @@ const WORK_LOG = [
   },
   {
     id: 'gap-whoisee-pro',
-    label: 'WHOiSEE has no PRO affiliation on file',
-    detail: 'WHOiSEE is a managed artist but has no BMI or ASCAP registration in the system. Writer royalties from all their tracks are uncollectable until they register. Need to confirm their PRO.',
-    verifyNote: 'Go to Roster and open WHOiSEE. PRO affiliation field will be blank. Ask Brett (WHOiSEE) if he is registered with BMI or ASCAP and send the IPI number.',
+    label: 'WHOiSEE BMI info found in emails/contracts — not yet in database',
+    detail: 'WHOiSEE\'s name and BMI registration info exists in emails and contracts but has not been entered into the artists table yet. Until it is, WHOiSEE shows as unregistered in the system.',
+    verifyNote: 'Go to Roster and open WHOiSEE — PRO field is blank. Pull the BMI IPI number from the contracts folder and tell me — I will enter it in 60 seconds.',
     status: 'gap' as const,
     verifyHref: '/dashboard/artists',
     area: 'publishing',
+  },
+  {
+    id: 'gap-ebay',
+    label: 'eBay — not on dashboard, no context in system',
+    detail: 'Thomas mentioned eBay activity. No eBay integration, tracking, or context exists in the platform yet. Unknown what needs to be built or tracked.',
+    verifyNote: 'Tell me what you are doing on eBay (selling merch? equipment? something else?) and I will add it to the right place on the dashboard.',
+    status: 'gap' as const,
+    verifyHref: '#',
+    area: 'platform',
+  },
+  {
+    id: 'gap-rim-shop',
+    label: 'Rim Shop — not on dashboard, Google Merchant / website missing',
+    detail: 'Rim Shop (Wheel Repair Specialists MI) is the first non-music 10RG client. No dashboard presence, no Google Merchant integration, no website tracking. Scope not yet defined.',
+    verifyNote: 'Tell me what you need for Rim Shop (website, Google Merchant feed, booking form, analytics) and I will scope it and add it to the Products section.',
+    status: 'gap' as const,
+    verifyHref: '#',
+    area: 'platform',
   },
 ]
 
