@@ -12,156 +12,176 @@ import {
 
 export const metadata = { title: '10 Research Group — Command Center' }
 
-// ─── Work log: past 48h — Supabase migrations + platform changes ─────────────
-// Sourced from supabase_migrations.schema_migrations. Edit as work completes.
+// ─── Work log ─────────────────────────────────────────────────────────────────
+// type: 'database' = change to Supabase schema or data
+//       'platform'  = UI / API code deployed to tenx10.co
+//       'publishing' = royalty registration or publishing admin
+//       'contracts'  = contract or deal work
+// verifyNote: what to look for to confirm this is real and working
 
 const WORK_LOG = [
-  // ── DB Migrations (applied to production) ──
   {
     id: 'migration-artist-invites',
-    label: '[DB] Migration: artist_invites table',
-    detail: 'New table for manager → artist invite tokens (7-day expiry). Used for artist join flow.',
+    label: 'artist_invites table added to database',
+    detail: 'New table holds manager → artist invite tokens with 7-day expiry. Powers the artist join flow.',
+    verifyNote: 'Go to Supabase → Table Editor → artist_invites. You should see the table with columns: id, artist_id, token, expires_at, used.',
     status: 'done' as const,
-    verifyHref: '#',
-    area: 'db',
+    verifyHref: 'https://supabase.com/dashboard/project/ocscxqaythiuidkwjuvg/editor',
+    area: 'database',
   },
   {
     id: 'migration-is-managed',
-    label: '[DB] Migration: is_managed column on artists',
-    detail: 'Distinguishes managed artists (DirtySnatcha, WHOiSEE, Dark Matter, Kotrax) from label-only roster (MAVIC, OZZTIN, PRIYANX).',
+    label: 'is_managed column added to artists table',
+    detail: 'Boolean that separates managed artists (DirtySnatcha, WHOiSEE, Dark Matter, Kotrax) from DSR label-only roster (MAVIC, OZZTIN, PRIYANX).',
+    verifyNote: 'Go to Roster page. Managed artists should be tagged differently from label-only artists.',
     status: 'done' as const,
     verifyHref: '/dashboard/artists',
-    area: 'db',
+    area: 'database',
   },
   {
     id: 'migration-pub-table',
-    label: '[DB] Migration: publishing_registrations table created',
-    detail: 'Tracks per-track registration at BMI/ASCAP/MLC/SoundExchange/CMRRA per artist. 82 DS/Leigh Bray tracks seeded from BMI data.',
+    label: 'publishing_registrations table created + 82 Leigh Bray tracks seeded',
+    detail: 'New table tracks per-track registration status at BMI, ASCAP, MLC, SoundExchange, CMRRA. 82 DirtySnatcha / Leigh Bray tracks seeded from BMI data.',
+    verifyNote: 'Go to Publishing page. You should see 82 tracks listed. BMI column should show registered. MLC, SoundExchange, CMRRA should show gaps (0 of 82).',
     status: 'done' as const,
     verifyHref: '/dashboard/publishing',
-    area: 'db',
+    area: 'database',
   },
   {
     id: 'migration-cmrra',
-    label: '[DB] Migration: CMRRA column added to publishing_registrations',
-    detail: 'cmrra_registered + cmrra_work_id columns added. CMRRA accounts 02274554/02274555 noted.',
+    label: 'CMRRA columns added to publishing_registrations',
+    detail: 'cmrra_registered (boolean) and cmrra_work_id (text) added. CMRRA accounts 02274554 and 02274555 exist — catalog not yet filed.',
+    verifyNote: 'Go to Publishing page. You should see a CMRRA column showing 0 of 82 registered — that gap is real, not a bug.',
     status: 'done' as const,
     verifyHref: '/dashboard/publishing',
-    area: 'db',
+    area: 'database',
   },
   {
     id: 'migration-deals-setlist',
-    label: '[DB] Migration: setlist + BMI columns on deals',
-    detail: 'deals.setlist (jsonb), deals.bmi_submitted, deals.bmi_submitted_at — enables setlist tracking per show.',
+    label: 'Setlist + BMI submission columns added to deals',
+    detail: 'deals.setlist (jsonb for track list), deals.bmi_submitted (boolean), deals.bmi_submitted_at (timestamp). Lets you track setlist per show and log BMI submission.',
+    verifyNote: 'Open any deal. Look for setlist section or BMI submission status. The fields exist even if empty on older deals.',
     status: 'done' as const,
     verifyHref: '/dashboard/deals',
-    area: 'db',
+    area: 'database',
   },
   {
     id: 'migration-artist-pro',
-    label: '[DB] Migration: PRO fields on artists',
-    detail: 'artists.pro_affiliation, pro_ipi, pro_submits_setlists. DirtySnatcha seeded: BMI, IPI 01017500116.',
+    label: 'PRO fields added to artists — DirtySnatcha seeded',
+    detail: 'artists.pro_affiliation, pro_ipi, pro_submits_setlists added. DirtySnatcha row seeded: BMI, IPI 01017500116.',
+    verifyNote: 'Go to Roster page and open DirtySnatcha. Should show BMI affiliation and IPI 01017500116. Other artists with no PRO will show blank — those are real gaps.',
     status: 'done' as const,
     verifyHref: '/dashboard/artists',
-    area: 'db',
+    area: 'database',
   },
   {
     id: 'migration-bmi-trigger',
-    label: '[DB] Migration: BMI task trigger on deal completion (then enhanced)',
-    detail: 'Trigger fires when deal → completed: creates setlist submission task. Enhanced (018) to also flag any setlist tracks not in publishing_registrations.',
+    label: 'Auto-task trigger: when a show completes, create BMI setlist task',
+    detail: 'Database trigger fires when a deal status changes to "completed". It creates a task to submit the setlist to BMI. Enhanced version (migration 018) also flags any setlist tracks missing from publishing_registrations.',
+    verifyNote: 'Mark any confirmed deal as "completed" in the pipeline. Then go to Tasks — a new BMI setlist submission task should appear automatically.',
     status: 'done' as const,
     verifyHref: '/dashboard/deals',
-    area: 'db',
+    area: 'database',
   },
   {
     id: 'tasks-seeded',
-    label: '[DB] 21 tasks seeded into tasks table',
-    detail: '7 publishing, 4 contract, 2 email, 3 platform, 3 business, 1 SongTools. All assigned to Thomas. Now 30 total in DB (+ 9 show-checklist tasks from trigger).',
+    label: '21 tasks manually seeded into the tasks table',
+    detail: '7 publishing tasks, 4 contract tasks, 2 email tasks, 3 platform tasks, 3 business tasks, 1 SongTools cancellation task. All assigned to Thomas.',
+    verifyNote: 'Go to Tasks. You should see 30+ open tasks grouped by type. Publishing tasks (amber), contract tasks (red), platform tasks (blue) should all be visible.',
     status: 'done' as const,
     verifyHref: '/dashboard/tasks',
-    area: 'db',
+    area: 'database',
   },
-  // ── Platform / UI ──
   {
     id: 'briefing-trigger',
-    label: '[UI] Send Briefing Now button on /dashboard/briefing',
-    detail: 'Fires Discord + email on-demand without waiting for cron. Auth via Supabase session (no secret needed).',
+    label: '"Send Briefing Now" button added to morning briefing page',
+    detail: 'Lets you fire the Discord + email briefing on-demand without waiting for the 7am cron. Auth uses your logged-in session — no secret key needed.',
+    verifyNote: 'Go to Briefing page and click "Send Briefing Now". Within 10 seconds you should get a Discord message and an email to thomas@dirtysnatcharecords.com.',
     status: 'done' as const,
     verifyHref: '/dashboard/briefing',
     area: 'platform',
   },
   {
     id: 'tasks-kanban',
-    label: '[UI] Task funnel — kanban view with color-coded types',
-    detail: '8 task types with distinct colors (contract=red, publishing=amber, setlist=purple, platform=blue, business=emerald). Kanban: To Do → In Progress → Done.',
+    label: 'Task kanban board with color-coded types',
+    detail: '8 task types each with a distinct color. Columns: To Do → In Progress → Done. Drag or click to move tasks.',
+    verifyNote: 'Go to Tasks. Should see a board view with colored cards. Contract tasks are red, publishing tasks amber, platform tasks blue, setlist tasks purple.',
     status: 'done' as const,
     verifyHref: '/dashboard/tasks',
     area: 'platform',
   },
   {
     id: 'briefing-sections',
-    label: '[UI] Morning briefing: PRO alerts + 20 tasks (was 8)',
-    detail: 'Briefing now surfaces artists missing PRO registration and shows up to 20 open tasks in Discord + email.',
+    label: 'Morning briefing now includes PRO alerts and up to 20 tasks',
+    detail: 'Previously showed 8 tasks max and no PRO alerts. Now surfaces artists with missing PRO registration (writer royalties uncollectable) and shows up to 20 open tasks.',
+    verifyNote: 'Hit "Send Briefing Now" on the Briefing page. Check Discord — the embed should have a PRO Registration Needed section and an Open Tasks section with up to 20 items.',
     status: 'done' as const,
     verifyHref: '/dashboard/briefing',
     area: 'platform',
   },
   {
     id: 'ops-dashboard',
-    label: '[UI] This command center (/dashboard/ops)',
-    detail: 'Full 10RG birds-eye: work log, blockers, publishing entities + per-track status, tasks, agents, products, costs.',
+    label: '10 Research Group command center built at /dashboard/ops',
+    detail: 'This page. Full birds-eye: work log with verify notes, blockers, publishing entity accounts, per-track registration gaps, active tasks, agent directory, products, skills being built, costs.',
+    verifyNote: 'You are already verifying it by reading this.',
     status: 'done' as const,
     verifyHref: '/dashboard/ops',
     area: 'platform',
-  },
-  {
-    id: 'beads-songtools',
-    label: '[Beads] SongTools issue filed (tenx10_research-9fa, P1)',
-    detail: 'Issue: cannot cancel SongTools until MLC + SoundExchange + CMRRA + AMRA all confirmed active with direct registrations.',
-    status: 'done' as const,
-    verifyHref: '#',
-    area: 'publishing',
-  },
-  // ── NOT YET IN DB — known gaps ──
-  {
-    id: 'gap-publishers-table',
-    label: '[MISSING] No publishers table in DB',
-    detail: 'DSR/ASCAP account, LAB10 Publishing/BMI (IPI 1262829440), and Songtrust are NOT tracked in a dedicated table — only referenced in publishing_registrations notes field. Need a publishers entity table.',
-    status: 'gap' as const,
-    verifyHref: '#',
-    area: 'db',
-  },
-  {
-    id: 'gap-catalog-incomplete',
-    label: '[MISSING] Catalog coverage: 82 of ~136 DS tracks seeded',
-    detail: 'publishing_registrations has 82 Leigh Bray / DirtySnatcha tracks. ~54 DS tracks not yet seeded. DSR label artist tracks (OZZTIN, MAVIC, PRIYANX, etc.) not seeded.',
-    status: 'gap' as const,
-    verifyHref: '/dashboard/publishing',
-    area: 'db',
-  },
-  {
-    id: 'migration-019',
-    label: '[DB] Migration 019: DSR ASCAP credentials stored in artists table',
-    detail: 'Added pro_member_id column. DSR row: pro_affiliation=ascap, IPI #1238282844, Member ID #7423184. DirtySnatcha row: pro_affiliation=bmi, IPI #01017500116 confirmed.',
-    status: 'done' as const,
-    verifyHref: '/dashboard/artists',
-    area: 'db',
-  },
-  {
-    id: 'migration-020',
-    label: '[DB] Migration 020: 54 DSR Records Publishing tracks imported from MLC work report',
-    detail: 'Added mlc_work_id column. Imported 54 MLC-registered works under DSR entity with mlc_work_id codes. Performers: Dark Matter, Barooka, Big City, Skinz, and 30+ more DSR label artists.',
-    status: 'done' as const,
-    verifyHref: '/dashboard/publishing',
-    area: 'db',
   },
   {
     id: 'discord-notify',
-    label: '[API] /api/discord/notify — approval ping endpoint',
-    detail: 'POST endpoint to send typed Discord notifications (approval/alert/info/done). Used when paused waiting for your direction. Requires auth or CRON_SECRET.',
+    label: 'Discord approval ping API built — fires when waiting on you',
+    detail: 'POST /api/discord/notify sends a typed message to your Discord with action items and a dashboard link. Used when a workflow needs your sign-off before continuing.',
+    verifyNote: 'Click the "Test Discord Ping" button at the top of this page. You should receive a Discord message with the publishing checklist approval request.',
     status: 'done' as const,
     verifyHref: '/dashboard/ops',
     area: 'platform',
+  },
+  {
+    id: 'migration-019',
+    label: 'DSR Records ASCAP credentials stored in the artists table',
+    detail: 'Added pro_member_id column. DSR row now shows: pro_affiliation = ASCAP, IPI #1238282844, Member ID #7423184. DirtySnatcha confirmed BMI, IPI #01017500116.',
+    verifyNote: 'Go to Roster and open the DSR row. Should show ASCAP, IPI 1238282844, Member ID 7423184. Open DirtySnatcha — should show BMI, IPI 01017500116.',
+    status: 'done' as const,
+    verifyHref: '/dashboard/artists',
+    area: 'publishing',
+  },
+  {
+    id: 'migration-020',
+    label: '54 DSR Records Publishing works imported from the MLC work report you uploaded',
+    detail: 'All 54 tracks from your mlc_work_report CSV are now in the database under the DSR entity, each with their MLC song code (e.g. RO2HAU, BE7XVL for Brainwash by Dark Matter). These are DSR label catalog tracks — separate from the 82 Leigh Bray songwriter tracks.',
+    verifyNote: 'Go to Publishing page. Filter by DSR entity. Should see 54 tracks all marked MLC registered. Check that BRAINWASH by Dark Matter (MLC code BE7XVL) is in the list.',
+    status: 'done' as const,
+    verifyHref: '/dashboard/publishing',
+    area: 'publishing',
+  },
+  // ── Known gaps — not done yet ──
+  {
+    id: 'gap-lab10-mlc',
+    label: 'LAB10 Publishing: 82 Leigh Bray tracks not yet filed at MLC',
+    detail: 'All 82 DirtySnatcha / Leigh Bray tracks are registered at BMI under LAB10 Publishing. None of them have been submitted to MLC yet. MLC collects US streaming mechanicals (Spotify, Apple Music, Amazon). This is the single biggest uncollected revenue gap.',
+    verifyNote: 'Go to Publishing page. Leigh Bray tracks show BMI = registered, MLC = 0 of 82. That gap is real money not being collected on every stream.',
+    status: 'gap' as const,
+    verifyHref: '/dashboard/publishing',
+    area: 'publishing',
+  },
+  {
+    id: 'gap-catalog-incomplete',
+    label: 'Catalog incomplete: ~54 DirtySnatcha tracks not yet seeded',
+    detail: 'The publishing_registrations table has 82 of ~136 total DirtySnatcha tracks. The remaining ~54 tracks exist on streaming platforms but are not in the database yet. DSR label artists (OZZTIN, MAVIC, PRIYANX) also not seeded.',
+    verifyNote: 'Go to Publishing page and count the rows for DirtySnatcha. Should be 82. If you know the full catalog is larger, those missing tracks = missing royalty tracking.',
+    status: 'gap' as const,
+    verifyHref: '/dashboard/publishing',
+    area: 'publishing',
+  },
+  {
+    id: 'gap-whoisee-pro',
+    label: 'WHOiSEE has no PRO affiliation on file',
+    detail: 'WHOiSEE is a managed artist but has no BMI or ASCAP registration in the system. Writer royalties from all their tracks are uncollectable until they register. Need to confirm their PRO.',
+    verifyNote: 'Go to Roster and open WHOiSEE. PRO affiliation field will be blank. Ask Brett (WHOiSEE) if he is registered with BMI or ASCAP and send the IPI number.',
+    status: 'gap' as const,
+    verifyHref: '/dashboard/artists',
+    area: 'publishing',
   },
 ]
 
@@ -469,27 +489,49 @@ export default async function OpsPage() {
       {/* ── Work Log ── */}
       <div className="space-y-3">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-          <CheckSquare className="h-3.5 w-3.5" /> recent work — past 48h (click verify to check)
+          <CheckSquare className="h-3.5 w-3.5" /> recent work + known gaps
         </p>
         <div className="rounded-xl border bg-card divide-y divide-border">
           {WORK_LOG.map(item => (
-            <div key={item.id} className={cn('flex items-start gap-3 px-4 py-3', item.status === 'gap' && 'bg-amber-500/5')}>
-              {item.status === 'done'
-                ? <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
-                : <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-              }
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold">{item.label}</p>
-                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{item.detail}</p>
+            <div key={item.id} className={cn('px-4 py-3', item.status === 'gap' && 'bg-amber-500/5')}>
+              <div className="flex items-start gap-3">
+                {item.status === 'done'
+                  ? <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                  : <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                }
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2 flex-wrap">
+                    <p className="text-sm font-semibold leading-snug">{item.label}</p>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={cn('px-1.5 py-0.5 rounded text-[10px]',
+                        item.area === 'database'   ? 'bg-blue-500/10 text-blue-400' :
+                        item.area === 'platform'   ? 'bg-violet-500/10 text-violet-400' :
+                        item.area === 'publishing' ? 'bg-amber-500/10 text-amber-400' :
+                        'bg-muted text-muted-foreground'
+                      )}>{item.area}</span>
+                      {item.verifyHref && item.verifyHref !== '/dashboard/ops' ? (
+                        <a
+                          href={item.verifyHref}
+                          target={item.verifyHref.startsWith('http') ? '_blank' : undefined}
+                          rel={item.verifyHref.startsWith('http') ? 'noopener noreferrer' : undefined}
+                          className="flex items-center gap-1 text-xs text-primary hover:underline"
+                        >
+                          verify <ArrowRight className="h-3 w-3" />
+                        </a>
+                      ) : null}
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{item.detail}</p>
+                  <div className={cn('mt-1.5 text-xs leading-relaxed rounded px-2 py-1',
+                    item.status === 'gap'
+                      ? 'bg-amber-500/10 text-amber-300'
+                      : 'bg-muted/60 text-muted-foreground'
+                  )}>
+                    <span className="font-medium">{item.status === 'gap' ? 'what to do: ' : 'how to verify: '}</span>
+                    {item.verifyNote}
+                  </div>
+                </div>
               </div>
-              <span className="px-1.5 py-0.5 rounded text-[10px] bg-muted text-muted-foreground shrink-0">{item.area}</span>
-              {item.status === 'done' && item.verifyHref !== '#' ? (
-                <Link href={item.verifyHref} className="flex items-center gap-1 text-xs text-primary hover:underline shrink-0">
-                  verify <ArrowRight className="h-3 w-3" />
-                </Link>
-              ) : (
-                <span className="text-[10px] text-muted-foreground shrink-0">{item.status === 'gap' ? 'missing' : 'no link'}</span>
-              )}
             </div>
           ))}
         </div>
