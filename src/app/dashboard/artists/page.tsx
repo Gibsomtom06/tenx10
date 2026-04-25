@@ -31,15 +31,16 @@ export default async function ArtistsPage() {
 
   const seen = new Set<string>()
   const artists = ((memberships ?? []) as any[])
-    .filter((m: any) => m.artists && !seen.has(m.artist_id) && seen.add(m.artist_id))
+    .filter((m: any) => m.artists && m.artists.is_managed !== false && !seen.has(m.artist_id) && seen.add(m.artist_id))
     .map((m: any) => ({ ...m.artists, _role: m.role }))
     .sort((a: any, b: any) => (a.stage_name ?? a.name).localeCompare(b.stage_name ?? b.name))
 
-  // Also get direct artists (manager_id based)
+  // Also get direct artists (manager_id based, managed only)
   const { data: directArtists } = await supabase
     .from('artists')
     .select('*')
     .eq('manager_id', user?.id ?? '')
+    .eq('is_managed', true)
 
   // Merge and deduplicate
   const allArtistIds = new Set(artists.map((a: any) => a.id))
