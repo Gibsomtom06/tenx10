@@ -3,10 +3,11 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { TriggerBriefingButton } from '../briefing/TriggerBriefingButton'
+import { DiscordTestButton } from './DiscordTestButton'
 import {
   Bot, Zap, CheckSquare, DollarSign, Music2, Globe, Package,
   ExternalLink, CheckCircle2, Clock, AlertCircle,
-  TrendingUp, Lightbulb, Server, AlertTriangle, ArrowRight,
+  TrendingUp, Lightbulb, Server, AlertTriangle, ArrowRight, Wrench,
 } from 'lucide-react'
 
 export const metadata = { title: '10 Research Group — Command Center' }
@@ -139,12 +140,28 @@ const WORK_LOG = [
     area: 'db',
   },
   {
-    id: 'gap-dsr-ascap',
-    label: '[MISSING] DirtySnatcha Records ASCAP account not in DB',
-    detail: 'DSR has an ASCAP publisher account. This exists in real life but is not stored in publishing_registrations or any artists/publishers table yet.',
-    status: 'gap' as const,
-    verifyHref: '#',
-    area: 'publishing',
+    id: 'migration-019',
+    label: '[DB] Migration 019: DSR ASCAP credentials stored in artists table',
+    detail: 'Added pro_member_id column. DSR row: pro_affiliation=ascap, IPI #1238282844, Member ID #7423184. DirtySnatcha row: pro_affiliation=bmi, IPI #01017500116 confirmed.',
+    status: 'done' as const,
+    verifyHref: '/dashboard/artists',
+    area: 'db',
+  },
+  {
+    id: 'migration-020',
+    label: '[DB] Migration 020: 54 DSR Records Publishing tracks imported from MLC work report',
+    detail: 'Added mlc_work_id column. Imported 54 MLC-registered works under DSR entity with mlc_work_id codes. Performers: Dark Matter, Barooka, Big City, Skinz, and 30+ more DSR label artists.',
+    status: 'done' as const,
+    verifyHref: '/dashboard/publishing',
+    area: 'db',
+  },
+  {
+    id: 'discord-notify',
+    label: '[API] /api/discord/notify — approval ping endpoint',
+    detail: 'POST endpoint to send typed Discord notifications (approval/alert/info/done). Used when paused waiting for your direction. Requires auth or CRON_SECRET.',
+    status: 'done' as const,
+    verifyHref: '/dashboard/ops',
+    area: 'platform',
   },
 ]
 
@@ -243,6 +260,45 @@ const PRODUCTS = [
   { name: 'Trelis Work', tagline: 'Workspace brand · inactive', status: 'dormant' as const, href: '#', revenue: '$0' },
 ]
 
+// ─── Skills Being Built ────────────────────────────────────────────────────────
+
+const SKILLS_BUILDING = [
+  {
+    id: 'release-registration',
+    name: 'New Release Registration',
+    desc: 'When a new release is added: auto-register with BMI (LAB10 Publishing), ASCAP (DSR Publishing), and MLC. Generates co-writer split sheet, submits to each society, marks DB complete.',
+    status: 'planned' as const,
+    societies: ['BMI', 'ASCAP', 'MLC'],
+  },
+  {
+    id: 'discord-approvals',
+    name: 'Discord Approval Flow',
+    desc: 'When a workflow needs Thomas\'s sign-off (publishing submission, contract send, task review), pings Discord with action items and a verify link. No more re-explaining context.',
+    status: 'building' as const,
+    societies: ['Discord'],
+  },
+  {
+    id: 'publishing-audit',
+    name: 'Publishing Audit Agent',
+    desc: 'Periodic scan of all tracks in DB vs registration status at BMI/ASCAP/MLC/SoundExchange/CMRRA. Flags any gaps and generates action list.',
+    status: 'planned' as const,
+    societies: ['BMI', 'MLC', 'SoundExchange', 'CMRRA'],
+  },
+  {
+    id: 'skills-directory',
+    name: 'Skills Directory',
+    desc: 'Living doc of all agent skills, tools, and workflows with markdown specs. Agents reference it before executing tasks.',
+    status: 'planned' as const,
+    societies: [],
+  },
+]
+
+const SKILL_STATUS = {
+  building: { dot: 'bg-yellow-500', label: 'building', bg: 'bg-yellow-500/5 border-yellow-500/20' },
+  planned:  { dot: 'bg-blue-400',   label: 'planned',  bg: 'bg-blue-500/5 border-blue-500/20' },
+  done:     { dot: 'bg-green-500',  label: 'done',     bg: 'bg-green-500/5 border-green-500/20' },
+}
+
 // ─── Ideas ─────────────────────────────────────────────────────────────────────
 
 const IDEAS = [
@@ -330,9 +386,9 @@ export default async function OpsPage() {
       .order('show_date', { ascending: true })
       .limit(20),
 
-    // Publishing registration counts
+    // Publishing registration counts — split by entity
     (supabase as any).from('publishing_registrations')
-      .select('bmi_registered, mlc_registered, soundexchange_registered, cmrra_registered, isrc'),
+      .select('artist_id, bmi_registered, mlc_registered, soundexchange_registered, cmrra_registered, isrc'),
   ])
 
   const tasks   = (rawTasks    ?? []) as any[]
@@ -340,13 +396,19 @@ export default async function OpsPage() {
   const pipeline = (openDeals  ?? []) as any[]
   const pub     = (pubStats    ?? []) as any[]
 
-  // Publishing counts
-  const pubTotal  = pub.length
-  const pubBmi    = pub.filter((r: any) => r.bmi_registered).length
-  const pubMlc    = pub.filter((r: any) => r.mlc_registered).length
-  const pubSe     = pub.filter((r: any) => r.soundexchange_registered).length
-  const pubCmrra  = pub.filter((r: any) => r.cmrra_registered).length
-  const pubNoIsrc = pub.filter((r: any) => !r.isrc).length
+  // Split by entity: Leigh Bray (BMI) vs DSR Publishing (ASCAP)
+  const DS_ARTIST_ID  = '3816c060-2bee-4b0e-bb27-90e8fa6392c8'
+  const DSR_ARTIST_ID = '7d8723b2-c919-4645-9b99-95dd379f631f'
+  const leighTracks   = pub.filter((r: any) => r.artist_id === DS_ARTIST_ID)
+  const dsrTracks     = pub.filter((r: any) => r.artist_id === DSR_ARTIST_ID)
+
+  const pubTotal  = leighTracks.length              // 82 Leigh Bray tracks
+  const pubBmi    = leighTracks.filter((r: any) => r.bmi_registered).length
+  const pubMlc    = leighTracks.filter((r: any) => r.mlc_registered).length
+  const pubSe     = leighTracks.filter((r: any) => r.soundexchange_registered).length
+  const pubCmrra  = leighTracks.filter((r: any) => r.cmrra_registered).length
+  const pubNoIsrc = leighTracks.filter((r: any) => !r.isrc).length
+  const dsrMlcDone = dsrTracks.filter((r: any) => r.mlc_registered).length
 
   const monthRevenue = deals.reduce((s: number, d: any) => s + (Number(d.offer_amount) || 0), 0)
   const GOAL = 10000
@@ -369,7 +431,7 @@ export default async function OpsPage() {
   const PUB_ENTITIES = [
     { name: 'Leigh Bray (songwriter)',         pro: 'BMI',     ipi: '01017500116',  status: 'active' as const, note: 'In artists table. IPI confirmed.' },
     { name: 'LAB10 Publishing (publisher)',    pro: 'BMI',     ipi: '1262829440',   status: 'active' as const, note: 'Confirmed in publishing_registrations notes. Not in a dedicated table.' },
-    { name: 'DirtySnatcha Records (label)',    pro: 'ASCAP',   ipi: null,           status: 'active' as const, note: 'DSR has ASCAP publisher account. NOT tracked in DB yet — needs publishers table.' },
+    { name: 'DirtySnatcha Records (label)',    pro: 'ASCAP',   ipi: '1238282844',   status: 'active' as const, note: 'In artists table (migration 019). IPI #1238282844 · Member ID #7423184.' },
     { name: 'Songtrust (admin service)',       pro: 'global',  ipi: null,           status: 'warning' as const, note: 'Currently collecting int\'l mechanicals (AMRA etc). CANCEL BLOCKED until MLC/SE/CMRRA active.' },
   ]
 
@@ -398,7 +460,10 @@ export default async function OpsPage() {
           <h1 className="text-2xl font-bold">command center</h1>
           <p className="text-sm text-muted-foreground mt-0.5">{todayFmt}</p>
         </div>
-        <TriggerBriefingButton />
+        <div className="flex flex-col items-end gap-2">
+          <TriggerBriefingButton />
+          <DiscordTestButton />
+        </div>
       </div>
 
       {/* ── Work Log ── */}
@@ -516,7 +581,7 @@ export default async function OpsPage() {
         {/* Per-track status */}
         <div>
           <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider pl-1 mb-1.5">
-            per-track registration — {pubTotal} tracks in DB (82 of ~136 DS tracks seeded · DSR label artists not yet seeded)
+            leigh bray / lab10 publishing — {pubTotal} tracks in DB · dsr records publishing — {dsrMlcDone} tracks registered at MLC
           </p>
           <div className="rounded-xl border bg-card divide-y divide-border">
             {PUB_ROWS.map(row => (
@@ -646,6 +711,39 @@ export default async function OpsPage() {
                 <p className="text-xs text-muted-foreground">{p.tagline}</p>
                 <p className="text-[10px] text-muted-foreground/60 mt-1">{p.revenue}</p>
               </Link>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ── Skills Being Built ── */}
+      <div className="space-y-3">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+          <Wrench className="h-3.5 w-3.5" /> skills being built
+        </p>
+        <div className="space-y-2">
+          {SKILLS_BUILDING.map(skill => {
+            const s = SKILL_STATUS[skill.status]
+            return (
+              <div key={skill.id} className={cn('rounded-xl border px-4 py-3', s.bg)}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={cn('h-1.5 w-1.5 rounded-full shrink-0', s.dot)} />
+                      <p className="text-sm font-semibold">{skill.name}</p>
+                      <span className="text-[10px] text-muted-foreground">{s.label}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{skill.desc}</p>
+                  </div>
+                  {skill.societies.length > 0 && (
+                    <div className="flex flex-wrap gap-1 shrink-0">
+                      {skill.societies.map(soc => (
+                        <span key={soc} className="px-1.5 py-0.5 rounded text-[10px] bg-muted text-muted-foreground">{soc}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             )
           })}
         </div>
