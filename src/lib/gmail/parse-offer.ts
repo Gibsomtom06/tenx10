@@ -1,4 +1,4 @@
-import { anthropic, CLAUDE_MODEL } from '@/lib/anthropic/client'
+import { groqChat, GROQ_FAST_MODEL } from '@/lib/groq/client'
 
 export interface ParsedOffer {
   artistName: string | null
@@ -19,11 +19,12 @@ export interface ParsedOffer {
 }
 
 export async function parseBookingOffer(subject: string, body: string): Promise<ParsedOffer> {
-  const response = await anthropic.messages.create({
-    model: CLAUDE_MODEL,
-    max_tokens: 1024,
-    system: 'You extract structured booking offer data from emails. Return ONLY valid JSON, no markdown, no explanation.',
-    messages: [{
+  const text = await groqChat([
+    {
+      role: 'system',
+      content: 'You extract structured booking offer data from emails. Return ONLY valid JSON, no markdown, no explanation, no code fences.',
+    },
+    {
       role: 'user',
       content: `Extract booking offer details from this email. Return JSON with these exact keys:
 {
@@ -49,10 +50,8 @@ showDate must be ISO format YYYY-MM-DD. guarantee is a number (no $ sign). marke
 Subject: ${subject}
 Body:
 ${body}`,
-    }],
-  })
-
-  const text = response.content[0].type === 'text' ? response.content[0].text.trim() : '{}'
+    },
+  ], GROQ_FAST_MODEL)
 
   try {
     return JSON.parse(text) as ParsedOffer

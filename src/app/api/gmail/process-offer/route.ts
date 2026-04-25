@@ -4,7 +4,7 @@ import { getGmailClientWithPersistence } from '@/lib/gmail/oauth'
 import { parseBookingOffer, extractEmailText, extractEmailHeader } from '@/lib/gmail/parse-offer'
 import { runDecisionEngine } from '@/lib/gmail/decision-engine'
 import { createGmailDraft } from '@/lib/gmail/drafts'
-import { anthropic, CLAUDE_MODEL } from '@/lib/anthropic/client'
+import { groqChat, GROQ_WRITE_MODEL } from '@/lib/groq/client'
 
 // Full pipeline: Gmail message → parse → 6-step eval → counter draft → save → create deal
 export async function POST(request: NextRequest) {
@@ -83,13 +83,12 @@ export async function POST(request: NextRequest) {
     .map(s => `${s.step}. ${s.name}: ${s.pass === true ? 'PASS' : s.pass === false ? 'FAIL' : 'DATA NEEDED'} — ${s.detail}`)
     .join('\n')
 
-  const emailResponse = await anthropic.messages.create({
-    model: CLAUDE_MODEL,
-    max_tokens: 1024,
-    system: `You are X, AI artist manager for TENx10 representing ${artistContext.name}.
-Write professional, concise booking response emails. Confident and industry-savvy.
-Never use filler phrases. Single point of contact is Thomas Nalian (manager).`,
-    messages: [{
+  const emailBody = await groqChat([
+    {
+      role: 'system',
+      content: `You are the AI manager for TENx10 representing ${artistContext.name}. Write professional, concise booking response emails. Confident and industry-savvy. Never use filler phrases. Single point of contact is Thomas Nalian (manager).`,
+    },
+    {
       role: 'user',
       content: `Write a ${decision.recommendation === 'accept' ? 'acceptance' : decision.recommendation === 'counter' ? 'counter-offer' : 'decline'} response to this booking offer.
 
@@ -106,10 +105,8 @@ Step results:
 ${decisionSummary}${counterPoints}
 
 Write ONLY the email body (no subject line). Sign off as Thomas Nalian, Manager | DirtySnatcha Records.`,
-    }],
-  })
-
-  const emailBody = emailResponse.content[0].type === 'text' ? emailResponse.content[0].text : ''
+    },
+  ], GROQ_WRITE_MODEL)
   const replyTo = parsedOffer.promoterEmail ?? fromHeader.match(/<(.+)>/)?.[1] ?? fromHeader
   const draftSubject = `Re: ${subject}`
 
