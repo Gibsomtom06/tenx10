@@ -35,7 +35,7 @@ async function buildManagerContext(supabase: Awaited<ReturnType<typeof createCli
 
   if (!artists?.length) return `Manager: ${userEmail}\nNo artists on roster yet.\nToday: ${today}`
 
-  const artistIds = artists.map(a => a.id)
+  const artistIds = artists.map((a: any) => a.id)
 
   const [
     { data: upcomingDeals },
@@ -69,9 +69,9 @@ async function buildManagerContext(supabase: Awaited<ReturnType<typeof createCli
       .gte('show_date', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]),
   ])
 
-  const artistMap = Object.fromEntries(artists.map(a => [a.id, a.stage_name ?? a.name]))
+  const artistMap = Object.fromEntries(artists.map((a: any) => [a.id, a.stage_name ?? a.name]))
 
-  const rosterLines = artists.map(a => {
+  const rosterLines = artists.map((a: any) => {
     const name = a.stage_name ?? a.name
     const role = (a as any).is_managed === false ? 'label act' : 'managed'
     return `- ${name} (${role})${a.genre ? ` · ${a.genre}` : ''}${a.spotify_artist_id ? ' · Spotify linked' : ''}`
@@ -92,7 +92,7 @@ async function buildManagerContext(supabase: Awaited<ReturnType<typeof createCli
     return `- [${d.status.toUpperCase()}] ${city} · ${artist}${d.offer_amount ? ` · $${Number(d.offer_amount).toLocaleString()}` : ''}`
   }).join('\n') || 'Pipeline clear.'
 
-  const taskLines = (openTasks ?? []).map(t =>
+  const taskLines = (openTasks ?? []).map((t: any) =>
     `- [${t.priority?.toUpperCase() ?? 'NORMAL'}] ${t.title}${t.due_date ? ` · due ${t.due_date}` : ''} · ${artistMap[t.artist_id ?? ''] ?? 'General'}`
   ).join('\n') || 'No open tasks.'
 
