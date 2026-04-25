@@ -11,81 +11,140 @@ import {
 
 export const metadata = { title: '10 Research Group — Command Center' }
 
-// ─── Work log: past 48h ───────────────────────────────────────────────────────
-// Add entries here as work is completed. verifyHref = page/feature to check.
+// ─── Work log: past 48h — Supabase migrations + platform changes ─────────────
+// Sourced from supabase_migrations.schema_migrations. Edit as work completes.
 
 const WORK_LOG = [
+  // ── DB Migrations (applied to production) ──
   {
-    id: 'briefing-trigger',
-    label: 'Send Briefing Now button',
-    detail: 'Button on /dashboard/briefing fires Discord + email immediately — no more waiting for cron.',
+    id: 'migration-artist-invites',
+    label: '[DB] Migration: artist_invites table',
+    detail: 'New table for manager → artist invite tokens (7-day expiry). Used for artist join flow.',
     status: 'done' as const,
-    verifyHref: '/dashboard/briefing',
-    area: 'platform',
+    verifyHref: '#',
+    area: 'db',
   },
   {
-    id: 'briefing-auth',
-    label: 'Morning briefing auth fix',
-    detail: 'Replaced broken SUPABASE_SERVICE_ROLE_KEY bypass with Supabase session check. Any logged-in user can trigger.',
+    id: 'migration-is-managed',
+    label: '[DB] Migration: is_managed column on artists',
+    detail: 'Distinguishes managed artists (DirtySnatcha, WHOiSEE, Dark Matter, Kotrax) from label-only roster (MAVIC, OZZTIN, PRIYANX).',
+    status: 'done' as const,
+    verifyHref: '/dashboard/artists',
+    area: 'db',
+  },
+  {
+    id: 'migration-pub-table',
+    label: '[DB] Migration: publishing_registrations table created',
+    detail: 'Tracks per-track registration at BMI/ASCAP/MLC/SoundExchange/CMRRA per artist. 82 DS/Leigh Bray tracks seeded from BMI data.',
+    status: 'done' as const,
+    verifyHref: '/dashboard/publishing',
+    area: 'db',
+  },
+  {
+    id: 'migration-cmrra',
+    label: '[DB] Migration: CMRRA column added to publishing_registrations',
+    detail: 'cmrra_registered + cmrra_work_id columns added. CMRRA accounts 02274554/02274555 noted.',
+    status: 'done' as const,
+    verifyHref: '/dashboard/publishing',
+    area: 'db',
+  },
+  {
+    id: 'migration-deals-setlist',
+    label: '[DB] Migration: setlist + BMI columns on deals',
+    detail: 'deals.setlist (jsonb), deals.bmi_submitted, deals.bmi_submitted_at — enables setlist tracking per show.',
+    status: 'done' as const,
+    verifyHref: '/dashboard/deals',
+    area: 'db',
+  },
+  {
+    id: 'migration-artist-pro',
+    label: '[DB] Migration: PRO fields on artists',
+    detail: 'artists.pro_affiliation, pro_ipi, pro_submits_setlists. DirtySnatcha seeded: BMI, IPI 01017500116.',
+    status: 'done' as const,
+    verifyHref: '/dashboard/artists',
+    area: 'db',
+  },
+  {
+    id: 'migration-bmi-trigger',
+    label: '[DB] Migration: BMI task trigger on deal completion (then enhanced)',
+    detail: 'Trigger fires when deal → completed: creates setlist submission task. Enhanced (018) to also flag any setlist tracks not in publishing_registrations.',
+    status: 'done' as const,
+    verifyHref: '/dashboard/deals',
+    area: 'db',
+  },
+  {
+    id: 'tasks-seeded',
+    label: '[DB] 21 tasks seeded into tasks table',
+    detail: '7 publishing, 4 contract, 2 email, 3 platform, 3 business, 1 SongTools. All assigned to Thomas. Now 30 total in DB (+ 9 show-checklist tasks from trigger).',
+    status: 'done' as const,
+    verifyHref: '/dashboard/tasks',
+    area: 'db',
+  },
+  // ── Platform / UI ──
+  {
+    id: 'briefing-trigger',
+    label: '[UI] Send Briefing Now button on /dashboard/briefing',
+    detail: 'Fires Discord + email on-demand without waiting for cron. Auth via Supabase session (no secret needed).',
     status: 'done' as const,
     verifyHref: '/dashboard/briefing',
     area: 'platform',
   },
   {
     id: 'tasks-kanban',
-    label: 'Task funnel — kanban with color codes',
-    detail: '8 task types color-coded (contract red, publishing amber, setlist purple, platform blue, etc). Kanban view: To Do → In Progress → Done.',
+    label: '[UI] Task funnel — kanban view with color-coded types',
+    detail: '8 task types with distinct colors (contract=red, publishing=amber, setlist=purple, platform=blue, business=emerald). Kanban: To Do → In Progress → Done.',
     status: 'done' as const,
     verifyHref: '/dashboard/tasks',
     area: 'platform',
   },
   {
-    id: 'tasks-seeded',
-    label: '20 tasks seeded in Supabase',
-    detail: 'Publishing, contracts, platform, business, and SongTools tasks now in DB — briefing surfaces them.',
-    status: 'done' as const,
-    verifyHref: '/dashboard/tasks',
-    area: 'platform',
-  },
-  {
-    id: 'setlist-trigger',
-    label: 'Setlist → publishing trigger (migration 018)',
-    detail: 'When deal marked completed: auto-creates BMI setlist submission task + flags any tracks not registered at PRO.',
-    status: 'done' as const,
-    verifyHref: '/dashboard/deals',
-    area: 'publishing',
-  },
-  {
-    id: 'publishing-tracker',
-    label: 'Publishing tracker — CMRRA column added',
-    detail: 'CMRRA registration status now tracked alongside BMI/MLC/SoundExchange.',
-    status: 'done' as const,
-    verifyHref: '/dashboard/publishing',
-    area: 'publishing',
-  },
-  {
-    id: 'briefing-content',
-    label: 'Morning briefing — publishing + tasks sections',
-    detail: 'Briefing now shows artists missing PRO registration and up to 20 open tasks (was 8).',
+    id: 'briefing-sections',
+    label: '[UI] Morning briefing: PRO alerts + 20 tasks (was 8)',
+    detail: 'Briefing now surfaces artists missing PRO registration and shows up to 20 open tasks in Discord + email.',
     status: 'done' as const,
     verifyHref: '/dashboard/briefing',
     area: 'platform',
   },
   {
+    id: 'ops-dashboard',
+    label: '[UI] This command center (/dashboard/ops)',
+    detail: 'Full 10RG birds-eye: work log, blockers, publishing entities + per-track status, tasks, agents, products, costs.',
+    status: 'done' as const,
+    verifyHref: '/dashboard/ops',
+    area: 'platform',
+  },
+  {
     id: 'beads-songtools',
-    label: 'SongTools issue filed in beads (tenx10_research-9fa)',
-    detail: 'P1 issue: register at MLC/SoundExchange/CMRRA/AMRA directly before cancelling SongTools.',
+    label: '[Beads] SongTools issue filed (tenx10_research-9fa, P1)',
+    detail: 'Issue: cannot cancel SongTools until MLC + SoundExchange + CMRRA + AMRA all confirmed active with direct registrations.',
     status: 'done' as const,
     verifyHref: '#',
     area: 'publishing',
   },
+  // ── NOT YET IN DB — known gaps ──
   {
-    id: 'ops-dashboard',
-    label: 'This command center (/dashboard/ops)',
-    detail: 'Full 10 Research Group birds-eye: products, agents, tasks, publishing, costs, work log.',
-    status: 'done' as const,
-    verifyHref: '/dashboard/ops',
-    area: 'platform',
+    id: 'gap-publishers-table',
+    label: '[MISSING] No publishers table in DB',
+    detail: 'DSR/ASCAP account, LAB10 Publishing/BMI (IPI 1262829440), and Songtrust are NOT tracked in a dedicated table — only referenced in publishing_registrations notes field. Need a publishers entity table.',
+    status: 'gap' as const,
+    verifyHref: '#',
+    area: 'db',
+  },
+  {
+    id: 'gap-catalog-incomplete',
+    label: '[MISSING] Catalog coverage: 82 of ~136 DS tracks seeded',
+    detail: 'publishing_registrations has 82 Leigh Bray / DirtySnatcha tracks. ~54 DS tracks not yet seeded. DSR label artist tracks (OZZTIN, MAVIC, PRIYANX, etc.) not seeded.',
+    status: 'gap' as const,
+    verifyHref: '/dashboard/publishing',
+    area: 'db',
+  },
+  {
+    id: 'gap-dsr-ascap',
+    label: '[MISSING] DirtySnatcha Records ASCAP account not in DB',
+    detail: 'DSR has an ASCAP publisher account. This exists in real life but is not stored in publishing_registrations or any artists/publishers table yet.',
+    status: 'gap' as const,
+    verifyHref: '#',
+    area: 'publishing',
   },
 ]
 
@@ -306,16 +365,24 @@ export default async function OpsPage() {
 
   const agentByStatus = AGENTS.reduce((a, ag) => { a[ag.status] = (a[ag.status] ?? 0) + 1; return a }, {} as Record<string, number>)
 
-  // Publishing rows for the table
+  // Publisher entity accounts (account-level, not per-track)
+  const PUB_ENTITIES = [
+    { name: 'Leigh Bray (songwriter)',         pro: 'BMI',     ipi: '01017500116',  status: 'active' as const, note: 'In artists table. IPI confirmed.' },
+    { name: 'LAB10 Publishing (publisher)',    pro: 'BMI',     ipi: '1262829440',   status: 'active' as const, note: 'Confirmed in publishing_registrations notes. Not in a dedicated table.' },
+    { name: 'DirtySnatcha Records (label)',    pro: 'ASCAP',   ipi: null,           status: 'active' as const, note: 'DSR has ASCAP publisher account. NOT tracked in DB yet — needs publishers table.' },
+    { name: 'Songtrust (admin service)',       pro: 'global',  ipi: null,           status: 'warning' as const, note: 'Currently collecting int\'l mechanicals (AMRA etc). CANCEL BLOCKED until MLC/SE/CMRRA active.' },
+  ]
+
+  // Per-track registration status (82 of ~136 DS tracks in DB)
   const PUB_ROWS = [
-    { label: 'BMI',           count: pubBmi,   total: pubTotal, done: pubBmi === pubTotal,  note: 'Performance royalties (live + radio)',             action: null },
-    { label: 'ASCAP',         count: null,      total: null,     done: null,                 note: 'n/a — you are BMI. Can\'t be both.',              action: null },
-    { label: 'MLC',           count: pubMlc,   total: pubTotal, done: pubMlc === pubTotal,   note: 'Streaming mechanicals (Spotify, Apple, etc)',      action: 'Upload catalog at mlc.com' },
-    { label: 'SoundExchange', count: pubSe,    total: pubTotal, done: pubSe  === pubTotal,   note: 'Digital radio (Pandora, SiriusXM). Two accounts.', action: 'Register performer + label at soundexchange.com' },
-    { label: 'CMRRA',         count: pubCmrra, total: pubTotal, done: pubCmrra === pubTotal, note: 'Canadian mechanicals. Accounts 02274554/02274555.', action: 'File catalog to existing accounts' },
-    { label: 'AMRA',          count: null,      total: null,     done: null,                 note: 'International mechanicals — SongTools covers now. Add column when replaced.', action: null },
-    { label: 'Luminate',      count: null,      total: null,     done: null,                 note: 'n/a — chart/analytics data, not a registration. Auto-tracked via VMG DSP delivery.', action: null },
-    { label: 'Missing ISRCs', count: pubNoIsrc, total: pubTotal, done: pubNoIsrc === 0,      note: '17 tracks with no ISRC — royalty collection broken for those.',  action: 'Request from VMG Assets' },
+    { label: 'BMI',           count: pubBmi,   total: pubTotal, done: pubBmi === pubTotal,  note: 'Performance royalties (live + radio). Leigh Bray songwriter + LAB10 publisher.', action: null },
+    { label: 'ASCAP (per track)', count: null,  total: null,     done: null,                 note: 'n/a for Leigh Bray tracks — he is BMI. DSR has an ASCAP publisher account but Leigh Bray\'s compositions register under BMI/LAB10.', action: null },
+    { label: 'MLC',           count: pubMlc,   total: pubTotal, done: pubMlc === pubTotal,   note: 'US streaming mechanicals (Spotify, Apple Music, Amazon). Most critical gap.',   action: 'Upload catalog at mlc.com' },
+    { label: 'SoundExchange', count: pubSe,    total: pubTotal, done: pubSe  === pubTotal,   note: 'Digital radio (Pandora, SiriusXM, internet radio). Need performer account (Leigh Bray) + rights holder account (DSR).', action: 'soundexchange.com — create performer + label accounts' },
+    { label: 'CMRRA / CA',   count: pubCmrra, total: pubTotal, done: pubCmrra === pubTotal, note: 'Canadian mechanicals. Accounts 02274554 (DSR Publishing) and 02274555 already exist. Just file the catalog.', action: 'File catalog to CMRRA accts 02274554 / 02274555' },
+    { label: 'AMRA',          count: null,      total: null,     done: null,                 note: 'International mechanicals. Currently handled by Songtrust. Must replace before cancelling Songtrust.', action: null },
+    { label: 'Luminate',      count: null,      total: null,     done: null,                 note: 'Not a royalty registration. Chart/analytics data — auto-tracked via VMG DSP delivery. No action needed.', action: null },
+    { label: 'Missing ISRCs', count: pubNoIsrc, total: pubTotal, done: pubNoIsrc === 0,      note: `${pubNoIsrc} tracks with null ISRC in DB — royalty societies can't match streams without it.`, action: 'Request missing ISRCs from VMG Assets' },
   ]
 
   return (
@@ -341,19 +408,22 @@ export default async function OpsPage() {
         </p>
         <div className="rounded-xl border bg-card divide-y divide-border">
           {WORK_LOG.map(item => (
-            <div key={item.id} className="flex items-start gap-3 px-4 py-3">
-              <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+            <div key={item.id} className={cn('flex items-start gap-3 px-4 py-3', item.status === 'gap' && 'bg-amber-500/5')}>
+              {item.status === 'done'
+                ? <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                : <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+              }
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold">{item.label}</p>
                 <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{item.detail}</p>
               </div>
               <span className="px-1.5 py-0.5 rounded text-[10px] bg-muted text-muted-foreground shrink-0">{item.area}</span>
-              {item.verifyHref !== '#' ? (
+              {item.status === 'done' && item.verifyHref !== '#' ? (
                 <Link href={item.verifyHref} className="flex items-center gap-1 text-xs text-primary hover:underline shrink-0">
                   verify <ArrowRight className="h-3 w-3" />
                 </Link>
               ) : (
-                <span className="text-[10px] text-muted-foreground shrink-0">beads CLI</span>
+                <span className="text-[10px] text-muted-foreground shrink-0">{item.status === 'gap' ? 'missing' : 'no link'}</span>
               )}
             </div>
           ))}
@@ -412,37 +482,67 @@ export default async function OpsPage() {
       </div>
 
       {/* ── Publishing Registrations ── */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-            <Music2 className="h-3.5 w-3.5" /> publishing registrations — {pubTotal} tracks (Leigh Bray / DirtySnatcha)
+            <Music2 className="h-3.5 w-3.5" /> publishing — entities + per-track status
           </p>
           <Link href="/dashboard/publishing" className="text-xs text-primary hover:underline">full tracker →</Link>
         </div>
-        <div className="rounded-xl border bg-card divide-y divide-border">
-          {PUB_ROWS.map(row => (
-            <div key={row.label} className="flex items-start gap-3 px-4 py-3">
-              <div className="w-5 shrink-0 mt-0.5">
-                {row.done === true  && <CheckCircle2 className="h-4 w-4 text-green-500" />}
-                {row.done === false && <AlertCircle  className="h-4 w-4 text-red-400" />}
-                {row.done === null  && <span className="h-4 w-4 flex items-center justify-center text-muted-foreground text-xs">—</span>}
+
+        {/* Publisher entity accounts */}
+        <div>
+          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider pl-1 mb-1.5">publisher accounts (entity level)</p>
+          <div className="rounded-xl border bg-card divide-y divide-border">
+            {PUB_ENTITIES.map(e => (
+              <div key={e.name} className="flex items-start gap-3 px-4 py-3">
+                <div className="w-5 shrink-0 mt-0.5">
+                  {e.status === 'active'  && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                  {e.status === 'warning' && <AlertCircle  className="h-4 w-4 text-amber-500" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-sm font-semibold">{e.name}</p>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{e.pro}</span>
+                    {e.ipi && <span className="text-[10px] text-muted-foreground font-mono">IPI {e.ipi}</span>}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">{e.note}</p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold">{row.label}</p>
-                  {row.count !== null && row.total !== null && (
-                    <span className={cn('text-xs font-mono', row.done ? 'text-green-500' : 'text-red-400')}>
-                      {row.count}/{row.total}
-                    </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Per-track status */}
+        <div>
+          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider pl-1 mb-1.5">
+            per-track registration — {pubTotal} tracks in DB (82 of ~136 DS tracks seeded · DSR label artists not yet seeded)
+          </p>
+          <div className="rounded-xl border bg-card divide-y divide-border">
+            {PUB_ROWS.map(row => (
+              <div key={row.label} className="flex items-start gap-3 px-4 py-3">
+                <div className="w-5 shrink-0 mt-0.5">
+                  {row.done === true  && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                  {row.done === false && <AlertCircle  className="h-4 w-4 text-red-400" />}
+                  {row.done === null  && <span className="h-4 w-4 flex items-center justify-center text-muted-foreground text-xs">—</span>}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold">{row.label}</p>
+                    {row.count !== null && row.total !== null && (
+                      <span className={cn('text-xs font-mono', row.done ? 'text-green-500' : 'text-red-400')}>
+                        {row.count}/{row.total}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">{row.note}</p>
+                  {row.action && !row.done && (
+                    <p className="text-xs text-amber-500 mt-1 font-medium">→ {row.action}</p>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">{row.note}</p>
-                {row.action && !row.done && (
-                  <p className="text-xs text-amber-500 mt-1 font-medium">→ {row.action}</p>
-                )}
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
 
