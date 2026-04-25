@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import {
   Users, Handshake, Mail,
   DollarSign, Send, AlertTriangle,
-  Calendar, TrendingUp, Clock, Inbox,
+  Calendar, TrendingUp, Clock, Inbox, Disc3,
 } from 'lucide-react'
 import Link from 'next/link'
 import { buttonVariants } from '@/components/ui/button'
@@ -296,6 +296,30 @@ export default async function DashboardPage({
           </CardContent>
         </Card>
       </div>
+
+      {/* Record Label */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Disc3 className="h-4 w-4 text-violet-400" /> DirtySnatcha Records
+            </CardTitle>
+            <Link href="/dashboard/label" className="text-xs text-primary hover:underline">open label →</Link>
+          </div>
+          <CardDescription>A&amp;R submissions, label roster, and release pipeline</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          <Link href="/dashboard/label" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-2')}>
+            <Disc3 className="h-4 w-4" /> Label Dashboard
+          </Link>
+          <Link href="/dashboard/catalog" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-2')}>
+            <TrendingUp className="h-4 w-4" /> Catalog
+          </Link>
+          <Link href="/dashboard/artists" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-2')}>
+            <Users className="h-4 w-4" /> Roster
+          </Link>
+        </CardContent>
+      </Card>
 
       {/* Quick Actions */}
       <Card>

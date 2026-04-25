@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { BriefingInbox } from './BriefingInbox'
 
 export const metadata = { title: 'Morning Briefing — TENx10' }
 
@@ -33,6 +34,7 @@ export default async function BriefingPage({
     { data: openTasks },
     { data: freshEmails },
     { data: recentDeals },
+    { data: gmailConn },
   ] = await Promise.all([
     // Shows in next 7 days
     supabase.from('deals')
@@ -74,6 +76,9 @@ export default async function BriefingPage({
       .eq('artist_id', access?.artistId ?? '')
       .in('status', ['confirmed', 'completed'])
       .gte('show_date', thirtyDaysAgo.split('T')[0]),
+
+    // Gmail connection status
+    supabase.from('gmail_connections').select('id').eq('user_id', user?.id ?? '').single(),
   ])
 
   const fmt = (n: number) => `$${n.toLocaleString()}`
@@ -243,6 +248,9 @@ export default async function BriefingPage({
           ))}
         </div>
       )}
+
+      {/* Inbox */}
+      <BriefingInbox gmailConnected={!!gmailConn} />
 
       {/* Quick links */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">

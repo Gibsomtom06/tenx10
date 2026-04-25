@@ -39,6 +39,7 @@ const NAV_GROUPS = [
       { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart2 },
       { href: '/dashboard/catalog', label: 'Catalog', icon: Disc3 },
       { href: '/dashboard/spotify', label: 'Spotify', icon: Music2 },
+      { href: '/dashboard/label', label: 'Label', icon: Disc3 },
     ],
   },
   {

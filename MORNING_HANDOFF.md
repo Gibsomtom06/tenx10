@@ -24,20 +24,18 @@ Confirmed. No guarantee on record — check the advance.
 
 ---
 
-## Your roster right now (live DB data)
+## Your managed roster (TENx10 clients — 4 artists)
 
-All artists managed by thomas@dirtysnatcha.com. **None have portal accounts yet.**
+None have portal accounts yet.
 
 | Artist | Email on file | Portal | Action needed |
 |--------|--------------|--------|---------------|
 | DirtySnatcha | contact@dirtysnatcha.com | ❌ | Invite at `/dashboard/artists` |
-| HVRCRFT | none | ❌ | Add email, then invite |
-| Kotrax | none | ❌ | Add email, then invite |
-| Dark Matter | none | ❌ | Add email, then invite |
 | WHOiSEE | none | ❌ | Add email, then invite |
-| MAVIC | none | ❌ | Add email, then invite |
-| OZZTIN | none | ❌ | Add email, then invite |
-| PRIYANX | none | ❌ | Add email, then invite |
+| Dark Matter | none | ❌ | Add email, then invite |
+| Kotrax | none | ❌ | Add email, then invite |
+
+*MAVIC, OZZTIN, PRIYANX, HVRCRFT are DSR label artists — not TENx10 management clients. Not included here.*
 
 **To invite an artist:** Go to `/dashboard/artists` → click **Invite** → enter their email. They get a magic link to set up their portal in 2 minutes.
 
@@ -68,11 +66,9 @@ Many Jan–Apr inquiries are now past their show date with no status update — 
 
 ---
 
-## One data issue to fix
+## One data issue to fix (low priority)
 
-You have **two Thomas accounts** in the DB:
-- `thomas@dirtysnatcha.com` — this is your main working account (has all artists)
-- `thomas@dirtysnatcharecords.com` — secondary, has 2 orphaned DirtySnatcha duplicate records
+`thomas@dirtysnatcha.com` is an alias that forwards to `thomas@dirtysnatcharecords.com` — same login, same person. Supabase still created two separate user rows. The `dirtysnatcha.com` row has 2 orphaned DirtySnatcha duplicate records that need merging into the main `dirtysnatcharecords.com` row.
 
 Also DirtySnatcha has **3 records** total (one per manager account). The one with `manager_id = f3ee39aa` (your main account) and `email = contact@dirtysnatcha.com` is the right one.
 
