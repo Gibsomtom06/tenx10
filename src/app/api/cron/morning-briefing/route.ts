@@ -88,28 +88,98 @@ export async function GET(req: Request) {
     fmt,
   })
 
-  if (!resend) return NextResponse.json({ error: 'RESEND_API_KEY not configured' }, { status: 500 })
+  // Send to Discord
+  const discordWebhook = process.env.DISCORD_WEBHOOK_URL
+  if (discordWebhook) {
+    const discordMsg = buildDiscordMessage({ dateStr, shows, stale, deposits, totalPipeline, monthRevenue, revenueGap, monthlyGoal: MONTHLY_GOAL, fmt })
+    await fetch(discordWebhook, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(discordMsg),
+    }).catch(e => console.error('Discord error:', e))
+  }
 
-  const { data, error } = await resend.emails.send({
-    from: 'TENx10 Briefing <briefing@tenx10.co>',
-    to: THOMAS_EMAIL,
-    subject: `Morning Briefing — ${dateStr}`,
-    html,
-  })
-
-  if (error) {
-    console.error('Resend error:', error)
-    return NextResponse.json({ error }, { status: 500 })
+  // Send email (Resend)
+  if (resend) {
+    const { error } = await resend.emails.send({
+      from: 'TENx10 Briefing <briefing@tenx10.co>',
+      to: THOMAS_EMAIL,
+      subject: `Morning Briefing — ${dateStr}`,
+      html,
+    })
+    if (error) console.error('Resend error:', error)
   }
 
   return NextResponse.json({
     ok: true,
-    id: data?.id,
     shows: shows.length,
     stale: stale.length,
     deposits: deposits.length,
     pipeline: totalPipeline,
   })
+}
+
+function buildDiscordMessage({ dateStr, shows, stale, deposits, totalPipeline, monthRevenue, revenueGap, monthlyGoal, fmt }: {
+  dateStr: string, shows: any[], stale: any[], deposits: any[], totalPipeline: number,
+  monthRevenue: number, revenueGap: number, monthlyGoal: number, fmt: (n: number) => string
+}) {
+  const fields = []
+
+  fields.push({
+    name: '📅 ' + dateStr,
+    value: [
+      `**This Month:** ${fmt(monthRevenue)} ${revenueGap > 0 ? `— ${fmt(revenueGap)} short of ${fmt(monthlyGoal)} goal 🔴` : '— Goal hit ✅'}`,
+      `**Open Pipeline:** ${fmt(totalPipeline)}`,
+      `**Needs Response:** ${stale.length > 0 ? `${stale.length} deals 🔴` : 'All clear ✅'}`,
+    ].join('\n'),
+    inline: false,
+  })
+
+  if (shows.length > 0) {
+    const showLines = shows.map((d: any) => {
+      const pts = (d.deal_points ?? {}) as Record<string, string>
+      const city = pts.city ?? d.title ?? '—'
+      const state = pts.state ? `, ${pts.state}` : ''
+      const artist = (d.artists as any)?.stage_name ?? (d.artists as any)?.name ?? '—'
+      const date = d.show_date ? new Date(d.show_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'
+      const guarantee = d.offer_amount ? fmt(Number(d.offer_amount)) : '—'
+      return `• ${date} — ${artist} @ ${city}${state} (${guarantee})`
+    }).join('\n')
+    fields.push({ name: `🎤 Shows This Week (${shows.length})`, value: showLines, inline: false })
+  }
+
+  if (stale.length > 0) {
+    const staleLines = stale.map((d: any) => {
+      const pts = (d.deal_points ?? {}) as Record<string, string>
+      const city = pts.city ?? d.title ?? '—'
+      const artist = (d.artists as any)?.stage_name ?? (d.artists as any)?.name ?? '—'
+      const days = d.updated_at ? Math.floor((Date.now() - new Date(d.updated_at).getTime()) / 86400000) : '?'
+      return `• ${artist} — ${city} (${d.status}, ${days}d silent)`
+    }).join('\n')
+    fields.push({ name: `⚠️ Needs Response (${stale.length})`, value: staleLines, inline: false })
+  }
+
+  if (deposits.length > 0) {
+    const depositLines = deposits.map((d: any) => {
+      const pts = (d.deal_points ?? {}) as Record<string, string>
+      const city = pts.city ?? d.title ?? '—'
+      const artist = (d.artists as any)?.stage_name ?? (d.artists as any)?.name ?? '—'
+      const amt = d.deposit_amount ? fmt(Number(d.deposit_amount)) : fmt(Math.round(Number(d.offer_amount) * 0.5))
+      return `• ${artist} — ${city} (${amt} owed)`
+    }).join('\n')
+    fields.push({ name: `💰 Deposits Due (${deposits.length})`, value: depositLines, inline: false })
+  }
+
+  fields.push({ name: '​', value: '[Open Dashboard →](https://tenx10.co/dashboard)', inline: false })
+
+  return {
+    embeds: [{
+      title: 'TENx10 Morning Briefing',
+      color: 0x7c3aed,
+      fields,
+      footer: { text: 'Sent automatically at 7am EST' },
+    }],
+  }
 }
 
 function buildEmail({
