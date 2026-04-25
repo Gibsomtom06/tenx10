@@ -7,7 +7,7 @@ import {
   Calendar, DollarSign, FileText, BarChart2,
   FolderOpen, Settings, Bot, Send, Upload, Disc3,
   CalendarDays, Newspaper, CheckSquare, LogOut,
-  ChevronDown, ChevronUp, TrendingUp, Zap,
+  ChevronDown, ChevronUp, TrendingUp, Zap, Globe,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -22,6 +22,12 @@ interface Props {
 }
 
 const NAV_GROUPS = [
+  {
+    label: '10 Research Group',
+    items: [
+      { href: '/dashboard/ops', label: 'Command Center', icon: Globe },
+    ],
+  },
   {
     label: 'Booking',
     items: [
