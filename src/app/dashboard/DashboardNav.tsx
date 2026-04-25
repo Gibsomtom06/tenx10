@@ -55,6 +55,7 @@ const NAV_GROUPS = [
     items: [
       { href: '/dashboard/finance', label: 'Finance', icon: DollarSign },
       { href: '/dashboard/revenue', label: 'Revenue Engine', icon: TrendingUp },
+      { href: '/dashboard/publishing', label: 'Publishing', icon: Music2 },
       { href: '/dashboard/contracts', label: 'Contracts', icon: FileText },
     ],
   },
