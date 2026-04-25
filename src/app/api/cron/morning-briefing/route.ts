@@ -9,7 +9,10 @@ export async function GET(req: Request) {
   const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
   // Security: Vercel Cron sends this header. Block unauthorized calls.
   const authHeader = req.headers.get('authorization')
-  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
+  const adminSecret = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const isCron = CRON_SECRET && authHeader === `Bearer ${CRON_SECRET}`
+  const isAdmin = adminSecret && authHeader === `Bearer ${adminSecret}`
+  if (CRON_SECRET && !isCron && !isAdmin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
