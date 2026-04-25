@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getGmailClient } from '@/lib/gmail/oauth'
+import { getGmailClientWithPersistence } from '@/lib/gmail/oauth'
 import { extractEmailHeader } from '@/lib/gmail/parse-offer'
 
 export async function GET() {
@@ -16,7 +16,7 @@ export async function GET() {
 
   if (!conn) return NextResponse.json({ error: 'Gmail not connected' }, { status: 400 })
 
-  const gmail = getGmailClient(conn.access_token, conn.refresh_token ?? undefined)
+  const gmail = getGmailClientWithPersistence(user.id, conn.access_token, conn.refresh_token, supabase)
 
   const { data: list } = await gmail.users.messages.list({
     userId: 'me',

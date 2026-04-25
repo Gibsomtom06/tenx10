@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getGmailClient } from '@/lib/gmail/oauth'
+import { getGmailClientWithPersistence } from '@/lib/gmail/oauth'
 import { parseBookingOffer, extractEmailText, extractEmailHeader } from '@/lib/gmail/parse-offer'
 import { runDecisionEngine } from '@/lib/gmail/decision-engine'
 import { createGmailDraft } from '@/lib/gmail/drafts'
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
   if (!conn) return NextResponse.json({ error: 'Gmail not connected' }, { status: 400 })
 
   // Fetch full Gmail message
-  const gmail = getGmailClient(conn.access_token, conn.refresh_token ?? undefined)
+  const gmail = getGmailClientWithPersistence(user.id, conn.access_token, conn.refresh_token, supabase)
   const { data: message } = await gmail.users.messages.get({
     userId: 'me',
     id: messageId,
@@ -120,6 +120,8 @@ Write ONLY the email body (no subject line). Sign off as Thomas Nalian, Manager 
     body: emailBody,
     accessToken: conn.access_token,
     refreshToken: conn.refresh_token ?? undefined,
+    userId: user.id,
+    supabase,
   })
 
   // Step 5: Create deal record

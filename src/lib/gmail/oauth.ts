@@ -1,4 +1,5 @@
 import { google } from 'googleapis'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export function getOAuthClient() {
   return new google.auth.OAuth2(
@@ -14,21 +15,16 @@ export function getAuthUrl(state?: string) {
     access_type: 'offline',
     prompt: 'consent',
     scope: [
-      // Gmail
       'https://www.googleapis.com/auth/gmail.readonly',
       'https://www.googleapis.com/auth/gmail.compose',
       'https://www.googleapis.com/auth/gmail.send',
       'https://www.googleapis.com/auth/gmail.labels',
       'https://www.googleapis.com/auth/gmail.modify',
-      // Google Drive
       'https://www.googleapis.com/auth/drive',
       'https://www.googleapis.com/auth/drive.file',
-      // Google Photos
       'https://www.googleapis.com/auth/photoslibrary',
-      // YouTube
       'https://www.googleapis.com/auth/youtube.readonly',
       'https://www.googleapis.com/auth/yt-analytics.readonly',
-      // User info
       'https://www.googleapis.com/auth/userinfo.email',
       'https://www.googleapis.com/auth/userinfo.profile',
     ],
@@ -42,6 +38,34 @@ export async function exchangeCode(code: string) {
   return tokens
 }
 
+/** Returns an OAuth2 client that auto-saves refreshed tokens back to Supabase. */
+export function getOAuthClientWithPersistence(
+  userId: string,
+  accessToken: string,
+  refreshToken: string | null,
+  supabase: SupabaseClient
+) {
+  const oauth2Client = getOAuthClient()
+  oauth2Client.setCredentials({
+    access_token: accessToken,
+    refresh_token: refreshToken ?? undefined,
+  })
+
+  // When googleapis auto-refreshes, persist the new tokens
+  oauth2Client.on('tokens', (tokens) => {
+    const update: Record<string, unknown> = {}
+    if (tokens.access_token) update.access_token = tokens.access_token
+    if (tokens.refresh_token) update.refresh_token = tokens.refresh_token
+    if (tokens.expiry_date) update.token_expires_at = new Date(tokens.expiry_date).toISOString()
+    if (Object.keys(update).length > 0) {
+      // fire-and-forget — don't block the response
+      supabase.from('gmail_connections').update(update).eq('user_id', userId).then(() => {})
+    }
+  })
+
+  return oauth2Client
+}
+
 export function getGmailClient(accessToken: string, refreshToken?: string) {
   const oauth2Client = getOAuthClient()
   oauth2Client.setCredentials({
@@ -49,4 +73,37 @@ export function getGmailClient(accessToken: string, refreshToken?: string) {
     refresh_token: refreshToken,
   })
   return google.gmail({ version: 'v1', auth: oauth2Client })
+}
+
+/** Gmail client that persists refreshed tokens. Use this in all routes. */
+export function getGmailClientWithPersistence(
+  userId: string,
+  accessToken: string,
+  refreshToken: string | null,
+  supabase: SupabaseClient
+) {
+  const auth = getOAuthClientWithPersistence(userId, accessToken, refreshToken, supabase)
+  return google.gmail({ version: 'v1', auth })
+}
+
+/** Google Drive client that persists refreshed tokens. */
+export function getDriveClientWithPersistence(
+  userId: string,
+  accessToken: string,
+  refreshToken: string | null,
+  supabase: SupabaseClient
+) {
+  const auth = getOAuthClientWithPersistence(userId, accessToken, refreshToken, supabase)
+  return google.drive({ version: 'v3', auth })
+}
+
+/** YouTube client that persists refreshed tokens. */
+export function getYouTubeClientWithPersistence(
+  userId: string,
+  accessToken: string,
+  refreshToken: string | null,
+  supabase: SupabaseClient
+) {
+  const auth = getOAuthClientWithPersistence(userId, accessToken, refreshToken, supabase)
+  return google.youtube({ version: 'v3', auth })
 }

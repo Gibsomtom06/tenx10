@@ -9,7 +9,7 @@
  */
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getGmailClient } from '@/lib/gmail/oauth'
+import { getGmailClientWithPersistence } from '@/lib/gmail/oauth'
 import { parseBookingOffer, extractEmailText, extractEmailHeader } from '@/lib/gmail/parse-offer'
 
 const OFFER_KEYWORDS = ['offer', 'booking', 'guarantee', 'venue', 'performance date', 'date inquiry', 'show offer', 'festival offer']
@@ -46,7 +46,7 @@ export async function POST() {
       name: ((m.artists as any).stage_name ?? (m.artists as any).name ?? '') as string,
     }))
 
-  const gmail = getGmailClient(conn.access_token, conn.refresh_token ?? undefined)
+  const gmail = getGmailClientWithPersistence(user.id, conn.access_token, conn.refresh_token, supabase)
 
   // Fetch recent inbox messages
   const { data: list } = await gmail.users.messages.list({
